@@ -1,0 +1,13 @@
+# TMD Controller - Python Dependencies
+# Twitter Media Downloader 控制程序依赖
+
+# 核心依赖
+pyyaml>=6.0
+
+# 开发依赖（可选）
+# black>=23.3.0
+# isort>=5.12.0
+# flake8>=6.0.0
+# mypy>=1.3.0
+# pre-commit>=3.3.0
+# pytest>=7.0.0
