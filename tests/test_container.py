@@ -2,7 +2,7 @@
 """测试 container.py"""
 
 import pytest
-from tmdc.container import Container, get_service
+from tmdc.container import Container
 
 
 class TestContainer:
@@ -86,10 +86,3 @@ class TestContainer:
 
         with pytest.raises(RuntimeError, match="Circular dependency"):
             container.resolve("a")
-
-    def test_get_service_helper(self):
-        """测试便捷函数"""
-        container = Container.get_instance()
-        container.register("helper_test", "value")
-        result = get_service("helper_test")
-        assert result == "value"

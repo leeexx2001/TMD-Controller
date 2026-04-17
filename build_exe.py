@@ -19,7 +19,7 @@ from pathlib import Path
 
 def clean_build_dirs(root_dir: Path) -> None:
     """清理构建目录"""
-    dirs_to_clean = [root_dir / "build", root_dir / "dist" / "exe"]
+    dirs_to_clean = [root_dir / "build", root_dir / "dist"]
     for path in dirs_to_clean:
         if path.exists():
             if path.is_dir():
@@ -35,15 +35,13 @@ def clean_build_dirs(root_dir: Path) -> None:
                 except Exception as e:
                     print(f"警告: 无法删除文件 {path}: {e}")
 
-    # 清理 dist 目录中的 tmdc*.exe
-    dist_dir = root_dir / "dist"
-    if dist_dir.exists():
-        for exe_file in dist_dir.glob("tmdc*.exe"):
-            print(f"删除旧文件: {exe_file}")
-            try:
-                exe_file.unlink()
-            except Exception as e:
-                print(f"警告: 无法删除 {exe_file}: {e}")
+    # 清理根目录中的 tmdc*.exe
+    for exe_file in root_dir.glob("tmdc*.exe"):
+        print(f"删除旧文件: {exe_file}")
+        try:
+            exe_file.unlink()
+        except Exception as e:
+            print(f"警告: 无法删除 {exe_file}: {e}")
 
 
 def find_tmd_exe(root_dir: Path) -> Path | None:
@@ -99,15 +97,8 @@ def build_with_spec(root_dir: Path, spec_path: Path, output_name: str) -> bool:
         print(f"❌ 未找到输出文件: {dist_exe}")
         return False
 
-    # 重命名并移动到 dist/exe 目录
-    exe_dist_dir = root_dir / "dist" / "exe"
-    try:
-        exe_dist_dir.mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        print(f"❌ 无法创建目录 {exe_dist_dir}: {e}")
-        return False
-
-    final_path = exe_dist_dir / output_name
+    # 移动到根目录
+    final_path = root_dir / output_name
 
     # 如果目标文件已存在，先删除
     if final_path.exists():
@@ -131,6 +122,16 @@ def build_with_spec(root_dir: Path, spec_path: Path, output_name: str) -> bool:
     except Exception as e:
         print(f"✅ 打包成功: {final_path}")
         print(f"⚠️  无法获取文件大小: {e}")
+
+    # 清理 build 和 dist 目录
+    for dir_name in ["build", "dist"]:
+        dir_path = root_dir / dir_name
+        if dir_path.exists():
+            try:
+                shutil.rmtree(dir_path)
+                print(f"🗑️  已清理目录: {dir_path}")
+            except Exception as e:
+                print(f"⚠️  无法清理目录 {dir_path}: {e}")
 
     return True
 

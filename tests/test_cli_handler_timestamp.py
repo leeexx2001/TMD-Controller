@@ -25,7 +25,7 @@ class TestHandleUserTimestamp:
 
     def test_auto_creates_nonexistent_user(self, mock_container):
         """自动创建不存在的用户"""
-        mock_container.database_service.find_users_for_reset.return_value = []
+        mock_container.database_service.find_users.return_value = []
         mock_container.timestamp_service.get_or_create_user_entity.return_value = OperationResult(
             success=True, message="已创建用户", data={"screen_name": "testuser"}
         )
@@ -44,7 +44,7 @@ class TestHandleUserTimestamp:
 
     def test_returns_failure_on_create_error(self, mock_container):
         """创建失败时返回错误"""
-        mock_container.database_service.find_users_for_reset.return_value = []
+        mock_container.database_service.find_users.return_value = []
         mock_container.timestamp_service.get_or_create_user_entity.return_value = OperationResult(
             success=False, error="创建失败"
         )
@@ -70,6 +70,7 @@ class TestHandleListTimestamp:
         container.config = Mock()
         container.logger = Mock()
         container.database_service = Mock()
+        container.database_service.check_list_metadata_exists = Mock()
         container.timestamp_service = Mock()
         container.ui = Mock()
         container.ui.headless_mode = False
@@ -77,7 +78,7 @@ class TestHandleListTimestamp:
 
     def test_auto_creates_nonexistent_list(self, mock_container):
         """自动创建不存在的列表"""
-        mock_container.database_service.check_list_exists.return_value = False
+        mock_container.database_service.check_list_metadata_exists.return_value = False
         mock_container.timestamp_service.get_or_create_list_entity.return_value = OperationResult(
             success=True, message="已创建列表"
         )
@@ -99,7 +100,7 @@ class TestHandleListTimestamp:
 
     def test_returns_failure_on_list_create_error(self, mock_container):
         """列表创建失败时返回错误"""
-        mock_container.database_service.check_list_exists.return_value = False
+        mock_container.database_service.check_list_metadata_exists.return_value = False
         mock_container.timestamp_service.get_or_create_list_entity.return_value = OperationResult(
             success=False, error="创建失败"
         )
@@ -118,7 +119,7 @@ class TestHandleListTimestamp:
 
     def test_batch_set_returns_correct_exit_code(self, mock_container):
         """批量设置返回正确的退出码"""
-        mock_container.database_service.check_list_exists.return_value = True
+        mock_container.database_service.check_list_metadata_exists.return_value = True
         mock_container.timestamp_service.batch_set_list_timestamp.return_value = (
             BatchOperationResult(
                 success=True,
@@ -126,6 +127,7 @@ class TestHandleListTimestamp:
                 total=5,
                 success_count=5,
                 failed_count=0,
+                failed_items=[],
             )
         )
 
@@ -143,7 +145,7 @@ class TestHandleListTimestamp:
 
     def test_batch_set_all_failed_returns_error(self, mock_container):
         """批量设置全部失败时返回错误"""
-        mock_container.database_service.check_list_exists.return_value = True
+        mock_container.database_service.check_list_metadata_exists.return_value = True
         mock_container.timestamp_service.batch_set_list_timestamp.return_value = (
             BatchOperationResult(
                 success=False,

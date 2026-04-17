@@ -487,45 +487,4 @@ class UIHelper:
             while msvcrt.kbhit():
                 msvcrt.getch()
 
-    def show_batch_summary(
-        self,
-        total: int,
-        success: int,
-        failed: int,
-        failed_items: Optional[List[str]] = None,
-    ) -> None:
-        """
-        显示批量操作摘要
-
-        Args:
-            total: 总数
-            success: 成功数
-            failed: 失败数
-            failed_items: 失败项目列表（可选）
-        """
-        print("\n{'=' * 50}")
-        print("📊 批量操作摘要")
-        print(f"{'=' * 50}")
-        print(f"  总数: {total}")
-        print(f"  ✅ 成功: {success}")
-        print(f"  ❌ 失败: {failed}")
-
-        if failed_items and len(failed_items) > 0:
-            print("\n失败项目列表:")
-            for item in failed_items[:10]:
-                print(f"  - {item}")
-            if len(failed_items) > 10:
-                print(f"  ... 还有 {len(failed_items) - 10} 个失败项目")
-        print(f"{'=' * 50}\n")
-
-
-# 类型检查：确保 UIHelper 实现了 IUIHelper 接口
-def _check_protocol() -> None:
-    """编译时类型检查"""
-    from typing import TYPE_CHECKING
-
-    if TYPE_CHECKING:
-        _: IUIHelper = UIHelper()
-
-
 __all__ = ["UIHelper"]

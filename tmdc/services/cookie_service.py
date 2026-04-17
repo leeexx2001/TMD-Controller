@@ -55,14 +55,6 @@ class CookieService(ICookieService):
         self.config = config
         self.logger = logger
 
-    def load_cookies(self) -> List[Dict[str, str]]:
-        """加载 Cookie 列表。"""
-        return self.load_additional_cookies()
-
-    def save_cookies(self, cookies: List[Dict[str, str]]) -> Tuple[bool, str]:
-        """保存 Cookie 列表。"""
-        return self.save_additional_cookies(cookies)
-
     def load_additional_cookies(self) -> List[Dict[str, str]]:
         """从 YAML 文件读取备用账号列表。
 

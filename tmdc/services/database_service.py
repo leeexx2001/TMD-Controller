@@ -78,7 +78,7 @@ class DatabaseService:
             return None
 
     @contextmanager
-    def _db_session(self) -> Generator[Optional[sqlite3.Cursor], None, None]:
+    def db_session(self) -> Generator[Optional[sqlite3.Cursor], None, None]:
         """数据库连接上下文管理器
 
         自动管理连接的创建、提交、回滚和关闭
@@ -104,31 +104,6 @@ class DatabaseService:
                 cursor.close()
             conn.close()
 
-    @contextmanager
-    def db_session(self) -> Generator[Optional[sqlite3.Cursor], None, None]:
-        """数据库连接上下文管理器（公共接口）
-
-        自动管理连接的创建、提交、回滚和关闭
-
-        Yields:
-            sqlite3.Cursor: 数据库游标，如果连接失败则 yield None
-        """
-        with self._db_session() as cursor:
-            yield cursor
-
-    # ==================== 工具方法 ====================
-
-    def _escape_like_pattern(self, keyword: str) -> str:
-        """转义 LIKE 通配符（委托给 text_utils）
-
-        Args:
-            keyword: 原始关键词
-
-        Returns:
-            转义后的关键词
-        """
-        return escape_like_pattern(keyword)
-
     # ==================== 查询方法 ====================
 
     def find_users(
@@ -136,6 +111,7 @@ class DatabaseService:
         keyword: str,
         *,
         limit: Optional[int] = None,
+        default_limit: int = 50,
     ) -> List[Dict[str, Any]]:
         """搜索用户
 
@@ -143,7 +119,8 @@ class DatabaseService:
 
         Args:
             keyword: 搜索关键词
-            limit: 返回结果数量限制（默认无限制）
+            limit: 返回结果数量限制（默认使用 default_limit）
+            default_limit: 默认限制数量（当 limit 为 None 时使用）
 
         Returns:
             List[Dict[str, Any]]: 用户信息列表
@@ -156,57 +133,15 @@ class DatabaseService:
             - entity_id: 实体 ID（可选）
             - latest_release_time: 最新发布时间（可选）
         """
-        with self._db_session() as cursor:
+        effective_limit = limit if limit is not None else default_limit
+
+        with self.db_session() as cursor:
             if cursor is None:
                 return []
 
             try:
-                pattern = self._escape_like_pattern(keyword)
-                limit_clause = f"LIMIT {limit}" if limit else ""
+                pattern = escape_like_pattern(keyword)
 
-                cursor.execute(
-                    f"""
-                    SELECT DISTINCT u.id, u.screen_name, u.name,
-                           ue.id as entity_id, ue.latest_release_time
-                    FROM users u
-                    LEFT JOIN user_entities ue ON u.id = ue.user_id
-                    WHERE u.screen_name LIKE ? ESCAPE '\\' OR u.name LIKE ? ESCAPE '\\'
-                    ORDER BY u.screen_name
-                    {limit_clause}
-                """,
-                    (pattern, pattern),
-                )
-                return [dict(row) for row in cursor.fetchall()]
-            except sqlite3.Error as e:
-                self.logger.error(f"搜索失败: {e}")
-                return []
-
-    def find_users_for_reset(
-        self,
-        keyword: str,
-        *,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
-        """搜索用户（用于重置时间戳）
-
-        与 find_users 功能相同，但语义上用于时间戳管理场景
-
-        Args:
-            keyword: 搜索关键词
-            limit: 返回结果数量限制（默认 50）
-
-        Returns:
-            List[Dict[str, Any]]: 用户信息列表
-        """
-        if limit is None:
-            limit = 50
-
-        with self._db_session() as cursor:
-            if cursor is None:
-                return []
-
-            try:
-                pattern = self._escape_like_pattern(keyword)
                 cursor.execute(
                     """
                     SELECT DISTINCT u.id, u.screen_name, u.name,
@@ -217,7 +152,7 @@ class DatabaseService:
                     ORDER BY u.screen_name
                     LIMIT ?
                 """,
-                    (pattern, pattern, limit),
+                    (pattern, pattern, effective_limit),
                 )
                 return [dict(row) for row in cursor.fetchall()]
             except sqlite3.Error as e:
@@ -243,8 +178,9 @@ class DatabaseService:
             - screen_name: 用户名
             - name: 显示名称
             - entity_id: 用户实体 ID（可能为 None）
+            - is_accessible: 是否可访问（0=不可访问，1=可访问）
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return []
 
@@ -252,26 +188,26 @@ class DatabaseService:
                 if limit is not None:
                     cursor.execute(
                         """
-                        SELECT u.id, u.screen_name, u.name, ue.id as entity_id
+                        SELECT u.id, u.screen_name, u.name, ue.id as entity_id, u.is_accessible
                         FROM users u
                         LEFT JOIN user_entities ue ON u.id = ue.user_id
                         WHERE NOT EXISTS (
                             SELECT 1 FROM user_links ul WHERE ul.user_id = u.id
                         )
-                        ORDER BY u.protected DESC, u.screen_name
+                        ORDER BY u.is_accessible DESC, u.screen_name
                         LIMIT ?
                         """,
                         (limit,),
                     )
                 else:
                     cursor.execute("""
-                        SELECT u.id, u.screen_name, u.name, ue.id as entity_id
+                        SELECT u.id, u.screen_name, u.name, ue.id as entity_id, u.is_accessible
                         FROM users u
                         LEFT JOIN user_entities ue ON u.id = ue.user_id
                         WHERE NOT EXISTS (
                             SELECT 1 FROM user_links ul WHERE ul.user_id = u.id
                         )
-                        ORDER BY u.protected DESC, u.screen_name
+                        ORDER BY u.is_accessible DESC, u.screen_name
                         """)
                 return [dict(row) for row in cursor.fetchall()]
             except sqlite3.Error as e:
@@ -289,25 +225,12 @@ class DatabaseService:
         Returns:
             bool: 列表存在返回 True，否则返回 False
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return False
 
             cursor.execute("SELECT 1 FROM lsts WHERE id = ?", (list_id,))
             return cursor.fetchone() is not None
-
-    def check_list_exists(self, list_id: int) -> bool:
-        """检查列表元数据是否存在 - 别名方法
-
-        Deprecated: 使用 check_list_metadata_exists 代替
-
-        Args:
-            list_id: 列表 ID
-
-        Returns:
-            bool: 列表存在返回 True，否则返回 False
-        """
-        return self.check_list_metadata_exists(list_id)
 
     def check_list_entity_exists(self, list_id: int) -> bool:
         """检查列表实体是否存在（lst_entities 表）
@@ -318,7 +241,7 @@ class DatabaseService:
         Returns:
             bool: 列表实体存在返回 True，否则返回 False
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return False
 
@@ -336,7 +259,7 @@ class DatabaseService:
         Returns:
             用户信息字典，包含 id, screen_name, name, entity_id, latest_release_time
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return None
 
@@ -361,7 +284,7 @@ class DatabaseService:
         Returns:
             实体信息字典，包含 screen_name, entity_id
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return None
 
@@ -391,7 +314,7 @@ class DatabaseService:
         Returns:
             (是否成功, screen_name) - 成功时返回用户名，失败时返回 None
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return (False, None)
 
@@ -439,7 +362,7 @@ class DatabaseService:
         Returns:
             是否成功
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return False
 
@@ -485,12 +408,12 @@ class DatabaseService:
         if not keyword_stripped:
             return results
 
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return results
 
             try:
-                pattern = self._escape_like_pattern(keyword_stripped)
+                pattern = escape_like_pattern(keyword_stripped)
 
                 cursor.execute(
                     """
@@ -582,7 +505,7 @@ class DatabaseService:
             - list_dir_count: 列表目录数量
             - success: 是否成功获取统计信息
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return {
                     "user_count": 0,
@@ -625,6 +548,59 @@ class DatabaseService:
                     "success": False,
                 }
 
+    # ==================== 删除操作 ====================
+
+    def delete_user_project(self, uid: int) -> Tuple[bool, str, Dict[str, int]]:
+        """删除用户项目的所有数据库记录
+
+        级联删除以下表中的相关数据：
+        - user_links: 用户-列表关联
+        - user_entities: 用户下载实体
+        - user_previous_names: 历史名称记录
+        - users: 用户主记录
+
+        Args:
+            uid: 用户 ID（Twitter 用户唯一标识符）
+
+        Returns:
+            Tuple[bool, str, Dict[str, int]]:
+                - 是否成功
+                - 操作消息或错误信息
+                - 各表删除行数统计 {"links": n, "entities": n, "names": n, "users": n}
+        """
+        stats = {"links": 0, "entities": 0, "names": 0, "users": 0}
+
+        with self.db_session() as cursor:
+            if cursor is None:
+                return (False, "数据库连接失败", stats)
+
+            try:
+                cursor.execute("DELETE FROM user_links WHERE user_id = ?", (uid,))
+                stats["links"] = cursor.rowcount
+
+                cursor.execute("DELETE FROM user_entities WHERE user_id = ?", (uid,))
+                stats["entities"] = cursor.rowcount
+
+                cursor.execute("DELETE FROM user_previous_names WHERE uid = ?", (uid,))
+                stats["names"] = cursor.rowcount
+
+                cursor.execute("DELETE FROM users WHERE id = ?", (uid,))
+                stats["users"] = cursor.rowcount
+
+                total_deleted = sum(stats.values())
+                if stats["users"] == 0:
+                    return (False, f"用户 ID {uid} 不存在于数据库中", stats)
+
+                return (
+                    True,
+                    f"已删除用户项目，共清理 {total_deleted} 条记录",
+                    stats,
+                )
+
+            except sqlite3.Error as e:
+                self.logger.error(f"删除用户项目失败(uid={uid}): {e}")
+                return (False, f"数据库操作失败: {e}", stats)
+
     # ==================== 辅助方法 ====================
 
     def execute_transaction(self, operations: List[Tuple[str, tuple]]) -> bool:
@@ -639,7 +615,7 @@ class DatabaseService:
         Note:
             发生异常时会自动回滚（由 _db_session 处理）
         """
-        with self._db_session() as cursor:
+        with self.db_session() as cursor:
             if cursor is None:
                 return False
 

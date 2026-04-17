@@ -129,9 +129,4 @@ class Container:
         self._resolving.clear()
 
 
-def get_service(name: str) -> Any:
-    """获取服务的便捷函数"""
-    return Container.get_instance().resolve(name)
-
-
-__all__ = ["Container", "get_service"]
+__all__ = ["Container"]

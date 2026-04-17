@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from ..tmd_types import IConfig, IUIHelper
 
 from ..parsers import DateParser
+from ..utils.formatters import format_timestamp
 from .base_menu import BaseMenu
 
 
@@ -92,7 +93,7 @@ class TimestampMenu(BaseMenu):
         """
         print(f"\n找到 {len(targets)} 个结果:")
         for i, t in enumerate(targets[:10], 1):
-            ts_display = self.timestamp_service.format_timestamp_display(
+            ts_display = format_timestamp(
                 t.get("timestamp"), default_empty="未设置"
             )
             if t["type"] == "user":
@@ -123,7 +124,7 @@ class TimestampMenu(BaseMenu):
             target: 目标信息字典
         """
         target_type = target.get("type", "user")
-        ts_display = self.timestamp_service.format_timestamp_display(
+        ts_display = format_timestamp(
             target.get("timestamp"), default_empty="未设置(全量下载)"
         )
 

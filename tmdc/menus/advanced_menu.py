@@ -84,13 +84,14 @@ class AdvancedMenu(BaseMenu):
             print("  [7] 自动关注    → 向私密账号发送关注请求")
             print("  [8] 重置全量    → 重置时间戳后全量下载")
             print("  [9] 孤立用户    → 列出未关联列表的用户\n")
+            print("  [D] 删除项目    → 从数据库中彻底删除某用户的所有数据")
             print("  [T] 时间戳管理  → 设置/重置同步时间戳，控制下载范围")
             print("  [R] 恢复下载    → 续传未完成任务")
             print("  [0] 返回主菜单")
             self.ui.print_separator()
             print("💡 双轨风控延迟配置在 [C]→[5] 中设置（区分成功/失败）")
 
-            choice = self.ui.safe_input("\n选择 [1-9,T,R,0]: ", allow_empty=True)
+            choice = self.ui.safe_input("\n选择 [1-9,D,T,R,0]: ", allow_empty=True)
             if choice is None:
                 continue
             choice = choice.upper()
@@ -117,6 +118,8 @@ class AdvancedMenu(BaseMenu):
                 self._menu_reset_time_download()
             elif choice == "9":
                 self._menu_unlinked_users()
+            elif choice == "D":
+                self._menu_delete_user_project()
             elif choice == "T":
                 self._menu_soft_reset()
             else:
@@ -417,18 +420,204 @@ class AdvancedMenu(BaseMenu):
 
         self.logger.info(f"查询孤立用户: 找到 {len(users)} 个未关联用户")
 
-        print(f"找到 {len(users)} 个孤立用户：\n")
-        print(f"{'序号':<6}{'用户名':<35}{'显示名称':<30}")
+        # 按 is_accessible 字段分组
+        accessible_users = [u for u in users if u.get("is_accessible")]
+        inaccessible_users = [u for u in users if not u.get("is_accessible")]
+
+        total = len(users)
+        accessible_count = len(accessible_users)
+        inaccessible_count = len(inaccessible_users)
+
+        print(f"找到 {total} 个孤立用户（可访问: {accessible_count}, 不可访问: {inaccessible_count}）：\n")
+
+        # 显示可访问账号表
+        if accessible_users:
+            print("=" * 71)
+            print(f"✅ 可访问账号 ({accessible_count} 个)")
+            print("=" * 71)
+            print(f"{'序号':<6}{'用户名':<35}{'显示名称':<30}")
+            print("-" * 71)
+
+            for idx, user in enumerate(accessible_users, 1):
+                screen_name = user.get("screen_name", "N/A")
+                name = user.get("name", "N/A") or "N/A"
+                user_url = f"https://x.com/{screen_name}"
+                print(f"{idx:<6}{user_url:<35}{name:<30}")
+
+            print()
+
+        # 显示不可访问账号表
+        if inaccessible_users:
+            print("=" * 71)
+            print(f"❌ 不可访问账号 ({inaccessible_count} 个)")
+            print("=" * 71)
+            print(f"{'序号':<6}{'用户名':<35}{'显示名称':<30}")
+            print("-" * 71)
+
+            for idx, user in enumerate(inaccessible_users, 1):
+                screen_name = user.get("screen_name", "N/A")
+                name = user.get("name", "N/A") or "N/A"
+                user_url = f"https://x.com/{screen_name}"
+                print(f"{idx:<6}{user_url:<35}{name:<30}")
+
+            print()
+
+        print("=" * 71)
+        print(f"\n💡 这些用户存在于数据库中，但未关联任何列表。")
+        print(f"   ✅ 可访问: {accessible_count} 个 | ❌ 不可访问: {inaccessible_count} 个")
+
+        # 遍历功能选项
+        print("\n" + "-" * 71)
+        print("遍历选项:")
+        if accessible_users:
+            print("  [1] 遍历可访问账号 (执行 tmd --user 更新 is_accessible)")
+        if inaccessible_users:
+            print("  [2] 遍历不可访问账号 (执行 tmd --user 更新 is_accessible)")
+        print("  [0] 返回")
         print("-" * 71)
+
+        while True:
+            choice = self.ui.safe_input("\n选择 [1/2/0]: ", allow_empty=True)
+            if choice is None:
+                continue
+            choice = choice.strip()
+
+            if choice == "0" or choice == "":
+                return
+            elif choice == "1" and accessible_users:
+                self._traverse_users(accessible_users, "可访问")
+                break
+            elif choice == "2" and inaccessible_users:
+                self._traverse_users(inaccessible_users, "不可访问")
+                break
+            else:
+                print("❌ 无效选择，请重新输入")
+
+    def _traverse_users(self, users: List[Dict[str, Any]], user_type: str) -> None:
+        """遍历用户列表并执行 tmd --user 命令
+
+        Args:
+            users: 用户列表
+            user_type: 用户类型描述（用于显示）
+        """
+        total = len(users)
+        print(f"\n🔄 开始遍历 {user_type} 账号，共 {total} 个用户")
+        print("=" * 71)
 
         for idx, user in enumerate(users, 1):
             screen_name = user.get("screen_name", "N/A")
             name = user.get("name", "N/A") or "N/A"
-            user_url = f"https://x.com/{screen_name}"
-            print(f"{idx:<6}{user_url:<35}{name:<30}")
 
-        print("-" * 71)
-        print("\n💡 这些用户存在于数据库中，但未关联任何列表实体。")
+            print(f"\n[{idx}/{total}] 正在处理: @{screen_name} ({name})")
+            print("-" * 71)
+
+            # 执行 tmd --user 命令
+            exit_code, stdout, stderr = self.download_service.run_tmd(
+                args=["--user", screen_name],
+                capture_output=True
+            )
+
+            if exit_code == 0:
+                print(f"✅ @{screen_name} 处理完成")
+            else:
+                print(f"❌ @{screen_name} 处理失败")
+                if stderr:
+                    print(f"   错误: {stderr[:200]}")
+
+            # 显示进度
+            if idx < total:
+                print(f"\n📊 进度: {idx}/{total} ({idx * 100 // total}%)")
+
+        print("\n" + "=" * 71)
+        print(f"✅ 遍历完成！共处理 {total} 个 {user_type} 账号")
+        print("💡 每个用户的 is_accessible 字段已通过 tmd --user 更新")
+        self.ui.pause()
+
+    def _menu_delete_user_project(self) -> None:
+        """从数据库中删除用户项目的所有数据"""
+        self.ui.clear_screen()
+        self.ui.show_header("删除用户项目")
+
+        if not self.database_service.is_database_available():
+            print(self.database_service.get_database_unavailable_message())
+            self.ui.pause()
+            return
+
+        print("⚠️ 危险操作：此操作将从数据库中彻底删除指定用户的全部数据！")
+        print("   包括：用户信息、下载实体、历史名称、列表关联\n")
+        print("支持格式: @用户名、用户名、数字ID\n")
+
+        user_input = self.ui.safe_input("回车退出或输入目标: ", allow_empty=True)
+        if not user_input:
+            return
+
+        input_type, value, _ = InputParser.parse(user_input)
+
+        if input_type == "numeric_id":
+            uid = int(value)
+            screen_name = f"(ID:{uid})"
+        elif input_type == "user":
+            screen_name = value
+            users = self.database_service.find_users(value, limit=5)
+            if not users:
+                print(f"\n❌ 未找到用户: @{value}")
+                self.ui.pause()
+                return
+            if len(users) > 1:
+                print(f"\n找到 {len(users)} 个匹配用户:")
+                for i, u in enumerate(users, 1):
+                    print(f"  [{i}] @{u['screen_name']} ({u['name']})")
+                idx = self.ui.input_number(
+                    "请选择序号: ", min_val=1, max_val=len(users)
+                )
+                if idx is None:
+                    print("📝 已取消")
+                    self.ui.pause()
+                    return
+                selected = users[idx - 1]
+            else:
+                selected = users[0]
+            uid = selected["id"]
+            screen_name = selected["screen_name"]
+        else:
+            print(f"\n❌ 无法识别输入: {user_input}")
+            self.ui.pause()
+            return
+
+        user_info = self.database_service.get_user_entity_info(screen_name) if input_type == "user" else None
+        entity_count = 0
+        if user_info and user_info.get("entity_id"):
+            entity_count = 1
+
+        print(f"\n📋 即将删除:")
+        print(f"   用户: @{screen_name} (ID: {uid})")
+        if entity_count:
+            print(f"   下载实体: {entity_count} 个")
+        print()
+
+        confirm_text = f"确认删除 @{screen_name} 的所有数据? 输入 DELETE 确认: "
+        confirm = self.ui.safe_input(confirm_text, allow_empty=True)
+        if not confirm or confirm.upper() != "DELETE":
+            print("📝 已取消删除操作")
+            self.ui.pause()
+            return
+
+        print(f"\n🗑️ 正在删除 @{screen_name} 的所有数据...")
+        success, message, stats = self.database_service.delete_user_project(uid)
+
+        if success:
+            print(f"\n✅ {message}")
+            print(f"   关联链接: {stats['links']} 条")
+            print(f"   下载实体: {stats['entities']} 条")
+            print(f"   历史名称: {stats['names']} 条")
+            print(f"   用户记录: {stats['users']} 条")
+            self.logger.info(
+                f"删除用户项目: @{screen_name}(uid={uid}), "
+                f"links={stats['links']}, entities={stats['entities']}, "
+                f"names={stats['names']}, users={stats['users']}"
+            )
+        else:
+            print(f"\n❌ {message}")
 
         self.ui.pause()
 
@@ -861,7 +1050,7 @@ class AdvancedMenu(BaseMenu):
             list_id_int = int(list_id)
         except ValueError:
             return False
-        return self.database_service.check_list_exists(list_id_int)
+        return self.database_service.check_list_metadata_exists(list_id_int)
 
 
 __all__ = ["AdvancedMenu"]

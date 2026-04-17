@@ -148,102 +148,6 @@ def backup_foo_db(
         return False
 
 
-def ensure_dir(path: Union[Path, str]) -> Path:
-    """确保目录存在，如果不存在则创建
-
-    Args:
-        path: 目录路径（字符串或 Path 对象）
-
-    Returns:
-        Path: 目录路径对象
-
-    Examples:
-        >>> import tempfile
-        >>> with tempfile.TemporaryDirectory() as tmpdir:
-        ...     result = ensure_dir(Path(tmpdir) / "subdir" / "nested")
-        ...     result.exists()
-        True
-    """
-    p = Path(path) if isinstance(path, str) else path
-    p.mkdir(parents=True, exist_ok=True)
-    return p
-
-
-def read_file_lines(
-    filepath: Union[Path, str],
-    encoding: str = "utf-8",
-    strip_lines: bool = True,
-    skip_empty: bool = True,
-) -> List[str]:
-    """读取文件并返回行列表
-
-    Args:
-        filepath: 文件路径
-        encoding: 文件编码，默认为 utf-8
-        strip_lines: 是否去除每行首尾空白，默认为 True
-        skip_empty: 是否跳过空行，默认为 True
-
-    Returns:
-        List[str]: 文件行列表
-
-    Raises:
-        FileNotFoundError: 文件不存在
-        UnicodeDecodeError: 编码错误
-
-    Examples:
-        >>> import tempfile
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        ...     _ = f.write("line1\\nline2\\n\\nline3\\n")
-        ...     temp_path = f.name
-        >>> lines = read_file_lines(temp_path)
-        >>> lines
-        ['line1', 'line2', 'line3']
-        >>> import os
-        >>> os.unlink(temp_path)
-    """
-    p = Path(filepath) if isinstance(filepath, str) else filepath
-
-    with open(p, "r", encoding=encoding) as f:
-        lines = f.readlines()
-
-    result = []
-    for line in lines:
-        if strip_lines:
-            line = line.strip()
-        if skip_empty and not line:
-            continue
-        result.append(line)
-
-    return result
-
-
-def get_file_size(filepath: Union[Path, str]) -> int:
-    """获取文件大小（字节）
-
-    Args:
-        filepath: 文件路径
-
-    Returns:
-        int: 文件大小（字节），文件不存在时返回 0
-
-    Examples:
-        >>> import tempfile
-        >>> with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        ...     _ = f.write("Hello, World!")
-        ...     temp_path = f.name
-        >>> get_file_size(temp_path)
-        13
-        >>> import os
-        >>> os.unlink(temp_path)
-    """
-    p = Path(filepath) if isinstance(filepath, str) else filepath
-
-    try:
-        return p.stat().st_size
-    except (FileNotFoundError, OSError):
-        return 0
-
-
 def get_errors_json_path(root_path: Optional[str]) -> Optional[Path]:
     """获取 errors.json 文件路径
 
@@ -267,8 +171,5 @@ def get_errors_json_path(root_path: Optional[str]) -> Optional[Path]:
 __all__ = [
     "atomic_write_yaml",
     "backup_foo_db",
-    "ensure_dir",
-    "read_file_lines",
-    "get_file_size",
     "get_errors_json_path",
 ]

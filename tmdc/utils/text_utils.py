@@ -36,31 +36,6 @@ def escape_like_pattern(keyword: str, escape_char: str = "\\") -> str:
     return f"%{escaped}%"
 
 
-def safe_join(items: Optional[List[str]], separator: str = ", ") -> str:
-    """安全连接字符串列表
-
-    过滤空值后连接字符串列表。
-
-    Args:
-        items: 字符串列表
-        separator: 分隔符
-
-    Returns:
-        连接后的字符串
-
-    Examples:
-        >>> safe_join(["a", "b", "", "c"])
-        'a, b, c'
-        >>> safe_join(None)
-        ''
-    """
-    if not items:
-        return ""
-
-    return separator.join(item for item in items if item)
-
-
 __all__ = [
     "escape_like_pattern",
-    "safe_join",
 ]

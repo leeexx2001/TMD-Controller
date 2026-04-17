@@ -15,15 +15,10 @@
 from tmdc.utils.file_io import (
     atomic_write_yaml,
     backup_foo_db,
-    ensure_dir,
     get_errors_json_path,
-    get_file_size,
-    read_file_lines,
 )
 from tmdc.utils.formatters import (
     format_duration,
-    format_file_size,
-    format_number,
     format_timestamp,
     mask_token,
     parse_db_timestamp,
@@ -53,26 +48,18 @@ from tmdc.utils.patterns import (
     USERNAME_RE,
     WIN_INVALID_CHARS_RE,
 )
-from tmdc.utils.text_utils import (
-    escape_like_pattern,
-    safe_join,
-)
+from tmdc.utils.text_utils import escape_like_pattern
 from tmdc.utils.validators.auth import validate_auth_token, validate_ct0
 from tmdc.utils.validators.cookie import parse_cookie_string
-from tmdc.utils.validators.list_id import validate_list_id
-from tmdc.utils.validators.path import validate_path
 from tmdc.utils.validators.proxy import check_proxy_values
 from tmdc.utils.validators.timestamp import handle_numeric_id_ambiguity, parse_timestamp_target
-from tmdc.utils.validators.username import clean_username, validate_username
+from tmdc.utils.validators.username import clean_username
 
 __all__ = [
     # 文件 I/O 工具
     "atomic_write_yaml",
     "backup_foo_db",
-    "ensure_dir",
-    "get_file_size",
     "get_errors_json_path",
-    "read_file_lines",
     # 路径处理工具
     "sanitize_win_filename",
     "unique_path",
@@ -80,8 +67,6 @@ __all__ = [
     "generate_filename_from_text",
     # 格式化工具
     "format_duration",
-    "format_file_size",
-    "format_number",
     "format_timestamp",
     "mask_token",
     "parse_db_timestamp",
@@ -93,12 +78,8 @@ __all__ = [
     "parse_timestamp_target",
     "validate_auth_token",
     "validate_ct0",
-    "validate_list_id",
-    "validate_path",
-    "validate_username",
     # 文本处理工具
     "escape_like_pattern",
-    "safe_join",
     # 正则模式
     "COOKIE_AUTH_TOKEN_RE",
     "COOKIE_CT0_RE",

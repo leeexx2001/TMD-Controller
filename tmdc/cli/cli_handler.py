@@ -122,6 +122,11 @@ class CLIHandler:
                   %(prog)s --profile-list 1234567890  # 下载列表成员的 Profile
                   %(prog)s --profile-list 111 --profile-list 222  # 下载多个列表成员
 
+                删除用户项目示例:
+                  %(prog)s --delete-user elonmusk        # 删除用户所有数据库记录（需确认）
+                  %(prog)s --delete-user elonmusk -H     # 无头模式（危险操作自动拒绝）
+                  %(prog)s --delete-user 12345           # 通过数字ID删除
+
                 注意事项:
                   - 时间戳设置后立即生效，下次下载将只获取该时间之后的推文
                   - 列表操作会影响列表内所有成员，请谨慎使用
@@ -194,6 +199,11 @@ class CLIHandler:
         maint_group.add_argument(
             "-S", "--stats", action="store_true", help="显示下载统计（失败/待处理任务数）后退出"
         )
+        maint_group.add_argument(
+            "--delete-user",
+            metavar="USERNAME_OR_ID",
+            help="删除用户项目的所有数据库记录（危险操作，需确认）",
+        )
 
         ts_group = parser.add_argument_group("时间戳管理（Timestamp Manager）")
         ts_group.add_argument(
@@ -250,6 +260,10 @@ class CLIHandler:
             # 维护模式
             if args.stats:
                 return self.handle_maintenance(args)
+
+            # 删除用户项目
+            if args.delete_user:
+                return self.handle_delete_user(args)
 
             # 时间戳管理
             if args.ts_set or args.ts_reset:
@@ -334,7 +348,7 @@ class CLIHandler:
                 print(f"列表实体: {list_count} 个")
 
                 # 检查 errors.json
-                errors_path = self._get_errors_path()
+                errors_path = get_errors_json_path(self.config.root_path)
                 if errors_path and errors_path.exists():
                     import json
 
@@ -364,9 +378,103 @@ class CLIHandler:
             return False
         return True
 
-    def _get_errors_path(self) -> Optional[Path]:
-        """获取 errors.json 路径（委托给 utils.file_io）"""
-        return get_errors_json_path(self.config.root_path)
+    def handle_delete_user(self, args: argparse.Namespace) -> int:
+        """
+        处理删除用户项目 CLI 命令
+
+        Args:
+            args: 解析后的命令行参数
+
+        Returns:
+            int: 退出码（0=成功，1=失败，130=用户取消）
+        """
+        if not self._check_db_available():
+            return 1
+
+        target = args.delete_user.strip()
+        if not target:
+            print("❌ 请提供用户名或用户ID")
+            return 1
+
+        # 判断是否为数字ID
+        if target.isdigit():
+            uid = int(target)
+            screen_name = f"(ID:{uid})"
+            # 验证用户是否存在
+            with self.database_service.db_session() as cursor:
+                if cursor:
+                    cursor.execute("SELECT screen_name FROM users WHERE id = ?", (uid,))
+                    row = cursor.fetchone()
+                    if row:
+                        screen_name = row["screen_name"]
+        else:
+            # 通过用户名查找
+            username = clean_username(target)
+            if not username:
+                print(f"❌ 无效的用户名: {target}")
+                return 1
+
+            users = self.database_service.find_users(username, limit=5)
+            if not users:
+                print(f"❌ 未找到用户: @{username}")
+                return 1
+
+            if len(users) > 1:
+                print(f"找到 {len(users)} 个匹配用户:")
+                for i, u in enumerate(users, 1):
+                    print(f"  [{i}] @{u['screen_name']} ({u['name']})")
+                print("\n请使用更精确的用户名或数字ID")
+                return 1
+
+            uid = users[0]["id"]
+            screen_name = users[0]["screen_name"]
+
+        # 获取用户实体信息用于显示
+        user_info = self.database_service.get_user_entity_info(screen_name)
+        entity_count = 1 if user_info and user_info.get("entity_id") else 0
+
+        print(f"\n📋 即将删除用户项目:")
+        print(f"   用户: @{screen_name} (ID: {uid})")
+        if entity_count:
+            print(f"   包含下载实体记录")
+        print()
+
+        # 无头模式自动拒绝危险操作
+        if self.container.ui.headless_mode:
+            print("⚠️ 无头模式下危险操作自动拒绝")
+            print("💡 如需删除，请使用交互模式（去掉 -H 参数）")
+            return 1
+
+        # 二次确认
+        try:
+            confirm = input(f"确认删除 @{screen_name} 的所有数据? 输入 DELETE 确认: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\n📝 已取消")
+            return 130
+
+        if confirm.upper() != "DELETE":
+            print("📝 已取消删除操作")
+            return 130
+
+        # 执行删除
+        print(f"\n🗑️ 正在删除 @{screen_name} 的所有数据...")
+        success, message, stats = self.database_service.delete_user_project(uid)
+
+        if success:
+            print(f"\n✅ {message}")
+            print(f"   关联链接: {stats['links']} 条")
+            print(f"   下载实体: {stats['entities']} 条")
+            print(f"   历史名称: {stats['names']} 条")
+            print(f"   用户记录: {stats['users']} 条")
+            self.logger.info(
+                f"CLI删除用户项目: @{screen_name}(uid={uid}), "
+                f"links={stats['links']}, entities={stats['entities']}, "
+                f"names={stats['names']}, users={stats['users']}"
+            )
+            return 0
+        else:
+            print(f"\n❌ {message}")
+            return 1
 
     def handle_timestamp(self, args: argparse.Namespace) -> int:
         """
@@ -393,7 +501,7 @@ class CLIHandler:
 
         try:
             if args.ts_set:
-                target, time_str = self._parse_ts_arg(args.ts_set)
+                target, time_str = parse_timestamp_target(args.ts_set)
                 if not target:
                     return 1
 
@@ -414,7 +522,7 @@ class CLIHandler:
                 return self._execute_timestamp_set(target, target_date, dry_run, args.ts_force)
 
             elif args.ts_reset:
-                target, _ = self._parse_ts_arg(args.ts_reset)
+                target, _ = parse_timestamp_target(args.ts_reset)
                 if not target:
                     return 1
 
@@ -427,24 +535,6 @@ class CLIHandler:
             self.logger.warning(f"时间戳设置失败: {e}")
             print(f"操作失败: {e}")
             return 1
-
-    def _parse_ts_arg(self, arg_str: str) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
-        """
-        解析时间戳参数中的目标部分（委托给 utils.validators）
-
-        Args:
-            arg_str: 参数字符串，格式如 "user:elonmusk,7d" 或 "list:123"
-
-        Returns:
-            Tuple[Optional[Dict], Optional[str]]:
-                (target_dict, time_part) 或 (None, None) 如果解析失败
-                target_dict: {"type": "user"|"list", "id": str}
-
-        Example:
-            >>> handler._parse_ts_arg("user:elonmusk,7d")
-            ({'type': 'user', 'id': 'elonmusk'}, '7d')
-        """
-        return parse_timestamp_target(arg_str)
 
     def _execute_timestamp_set(
         self,
@@ -526,7 +616,7 @@ class CLIHandler:
         ts_service: "TimestampService",
     ) -> int:
         """处理用户时间戳设置（支持自动创建）"""
-        users = db_service.find_users_for_reset(target_id)
+        users = db_service.find_users(target_id)
 
         if not users:
             # 用户不存在，尝试自动创建
@@ -593,7 +683,7 @@ class CLIHandler:
 
         list_id_int = int(target_id)
 
-        list_exists = db_service.check_list_exists(list_id_int)
+        list_exists = db_service.check_list_metadata_exists(list_id_int)
 
         if not list_exists:
             # 列表不存在，尝试自动创建（与用户路径对称）

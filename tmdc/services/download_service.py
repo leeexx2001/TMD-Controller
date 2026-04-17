@@ -276,17 +276,7 @@ class DownloadService:
             self.logger.error(f"[TMD执行] 异常详情:\n{traceback.format_exc()}")
             return 1, "", str(e)
 
-    def check_list_exists(self, list_id: str) -> bool:
-        """
-        检查列表是否存在（公共接口）
 
-        Args:
-            list_id: 列表 ID
-
-        Returns:
-            列表存在返回 True
-        """
-        return self._check_list_exists(list_id)
 
     def check_pending_tweets(self, root_path: Optional[str]) -> Optional[int]:
         """
@@ -338,9 +328,8 @@ class DownloadService:
         result.exit_code = exit_code
         return result
 
-    def _check_list_exists(self, list_id: str) -> bool:
-        """
-        检查列表是否已存在于数据库中
+    def check_list_exists(self, list_id: str) -> bool:
+        """检查列表是否已存在于数据库中
 
         Args:
             list_id: 列表 ID
@@ -352,7 +341,7 @@ class DownloadService:
             return False
 
         try:
-            return self.database_service.check_list_exists(int(list_id))
+            return self.database_service.check_list_metadata_exists(int(list_id))
         except (ValueError, AttributeError):
             return False
 

@@ -282,15 +282,31 @@ def _start_interactive_menu(
     except KeyboardInterrupt:
         print("\n\n用户中断，正在退出...")
         return 130
+    finally:
+        # 确保日志处理器被正确关闭，加快退出速度
+        _shutdown_logging()
 
     return 0
 
 
+def _shutdown_logging() -> None:
+    """关闭所有日志处理器，确保快速退出"""
+    logger = logging.getLogger("TMDController")
+    for handler in logger.handlers[:]:
+        handler.flush()
+        handler.close()
+        logger.removeHandler(handler)
+
+    # 关闭根日志记录器的所有处理器
+    root = logging.getLogger()
+    for handler in root.handlers[:]:
+        handler.flush()
+        handler.close()
+        root.removeHandler(handler)
+
+
 def _find_tmd_executable() -> Optional[Path]:
     """查找 TMD 可执行文件"""
-    import subprocess
-    import sys
-
     from .constants import C
 
     # 1. 检查 PyInstaller 打包的资源目录 (MEIPASS)

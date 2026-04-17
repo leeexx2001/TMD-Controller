@@ -7,45 +7,6 @@ import re
 from typing import Union
 
 from ...constants import C
-from ..patterns import USERNAME_RE
-
-
-def validate_username(username: str) -> tuple[bool, str]:
-    """验证 Twitter 用户名格式
-
-    Twitter 用户名规则：
-    - 长度：1-15 个字符
-    - 只能包含字母、数字、下划线
-
-    Args:
-        username: 需要验证的用户名
-
-    Returns:
-        Tuple[bool, str]: (是否有效, 错误信息)
-
-    Examples:
-        >>> validate_username("elonmusk")
-        (True, '')
-        >>> validate_username("a" * 16)
-        (False, '用户名长度超出限制（最多15个字符）')
-        >>> validate_username("invalid-user")
-        (False, '用户名只能包含字母、数字和下划线')
-    """
-    if not username:
-        return False, "用户名不能为空"
-
-    username = username.lstrip("@")
-
-    if not username:
-        return False, "用户名不能为空"
-
-    if len(username) > 15:
-        return False, "用户名长度超出限制（最多15个字符）"
-
-    if not USERNAME_RE.match(username):
-        return False, "用户名只能包含字母、数字和下划线"
-
-    return True, ""
 
 
 def clean_username(raw: str) -> Union[str, None]:
@@ -120,4 +81,4 @@ def is_reserved_path(path: str) -> bool:
     return path.lower() in C.TWITTER_RESERVED_PATHS
 
 
-__all__ = ["validate_username", "clean_username", "is_reserved_path"]
+__all__ = ["clean_username", "is_reserved_path"]

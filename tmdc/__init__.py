@@ -27,10 +27,6 @@ def __getattr__(name: str):
         from .constants import C
 
         return C
-    elif name in ("TMDError", "ConfigError", "DownloadError", "DatabaseError", "ValidationError"):
-        from . import exceptions
-
-        return getattr(exceptions, name)
     elif name == "main":
         from .__main__ import main
 
@@ -39,10 +35,6 @@ def __getattr__(name: str):
         from .container import Container
 
         return Container
-    elif name == "get_service":
-        from .container import get_service
-
-        return get_service
     elif name == "TMDConfig":
         from .config.config import TMDConfig
 
@@ -101,8 +93,6 @@ def __getattr__(name: str):
         "CookieInfo",
         "BatchConfig",
         "MenuOption",
-        "PathLike",
-        "JsonValue",
         "CookieDict",
         "T",
         "TConfig",
@@ -122,13 +112,7 @@ __all__ = [
     "main",
     "Constants",
     "C",
-    "TMDError",
-    "ConfigError",
-    "DownloadError",
-    "DatabaseError",
-    "ValidationError",
     "Container",
-    "get_service",
     "TMDConfig",
     "CookieService",
     "DatabaseService",

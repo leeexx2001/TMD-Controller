@@ -62,35 +62,6 @@ class TimestampService:
         self.database_service = database_service
         self.download_service = download_service
 
-    # ==================== 时间戳格式化（委托给 utils.formatters） ====================
-
-    def format_timestamp_display(
-        self,
-        timestamp: Optional[Any],
-        default_empty: str = "从未同步",
-    ) -> str:
-        """格式化时间戳显示（委托给 utils.formatters）
-
-        Args:
-            timestamp: 时间戳值
-            default_empty: 当时间戳为空时的默认显示文本
-
-        Returns:
-            格式化后的显示字符串
-        """
-        return format_timestamp(timestamp, default_empty=default_empty)
-
-    def format_duration(self, td: timedelta) -> str:
-        """格式化时间间隔为人类可读字符串（委托给 utils.formatters）
-
-        Args:
-            td: 时间间隔
-
-        Returns:
-            人类可读的持续时间字符串
-        """
-        return format_duration(td)
-
     # ==================== 时间戳设置（智能选择） ====================
 
     def set_sync_timestamp(

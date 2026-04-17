@@ -9,8 +9,7 @@ from __future__ import annotations
 
 import re
 
-# Twitter 用户名最大长度常量
-USERNAME_MAX_LEN: int = 15
+from ..constants import C
 
 # ==================== Cookie 相关模式 ====================
 
@@ -25,7 +24,7 @@ COOKIE_CT0_RE: re.Pattern[str] = re.compile(r"ct0=([a-f0-9]+)", re.IGNORECASE)
 USERNAME_RE: re.Pattern[str] = re.compile(r"^[a-zA-Z0-9_]+$")
 """验证 Twitter 用户名格式"""
 
-USERNAME_IN_PARENS_RE: re.Pattern[str] = re.compile(rf"\(([a-zA-Z0-9_]{{1,{USERNAME_MAX_LEN}}})\)$")
+USERNAME_IN_PARENS_RE: re.Pattern[str] = re.compile(rf"\(([a-zA-Z0-9_]{{1,{C.USERNAME_MAX_LEN}}})\)$")
 """匹配括号中的用户名（如 "显示名(username)"）"""
 
 # ==================== URL 相关模式 ====================

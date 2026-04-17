@@ -145,78 +145,6 @@ def mask_token(token: str) -> str:
     return f"{token[:6]}...{token[-4:]}"
 
 
-def format_file_size(size_bytes: int, precision: int = 2) -> str:
-    """格式化文件大小为人类可读字符串
-
-    Args:
-        size_bytes: 文件大小（字节）
-        precision: 小数位数，默认为 2
-
-    Returns:
-        人类可读的文件大小字符串，如 "1.23 MB"
-
-    Examples:
-        >>> format_file_size(0)
-        '0 B'
-        >>> format_file_size(1024)
-        '1.00 KB'
-        >>> format_file_size(1536)
-        '1.50 KB'
-        >>> format_file_size(1048576)
-        '1.00 MB'
-        >>> format_file_size(1073741824)
-        '1.00 GB'
-    """
-    if size_bytes < 0:
-        return "无效大小"
-
-    if size_bytes == 0:
-        return "0 B"
-
-    units = ["B", "KB", "MB", "GB", "TB", "PB"]
-    unit_index = 0
-    size = float(size_bytes)
-
-    while size >= 1024 and unit_index < len(units) - 1:
-        size /= 1024
-        unit_index += 1
-
-    return f"{size:.{precision}f} {units[unit_index]}"
-
-
-def format_number(
-    number: Union[int, float], thousand_separator: str = ",", precision: int = 0
-) -> str:
-    """格式化数字为带千分位的字符串
-
-    Args:
-        number: 需要格式化的数字
-        thousand_separator: 千分位分隔符，默认为 ","
-        precision: 小数位数，默认为 0（整数）
-
-    Returns:
-        格式化后的数字字符串
-
-    Examples:
-        >>> format_number(1234567)
-        '1,234,567'
-        >>> format_number(1234567.89, precision=2)
-        '1,234,567.89'
-        >>> format_number(1234567, thousand_separator="_")
-        '1_234_567'
-    """
-    if isinstance(number, float) and precision > 0:
-        formatted = f"{number:,.{precision}f}"
-        if thousand_separator != ",":
-            formatted = formatted.replace(",", thousand_separator)
-        return formatted
-    else:
-        formatted = f"{int(number):,}"
-        if thousand_separator != ",":
-            formatted = formatted.replace(",", thousand_separator)
-        return formatted
-
-
 def parse_db_timestamp(ts_str: Optional[str]) -> Optional[datetime]:
     """解析数据库中的时间戳字符串
 
@@ -261,7 +189,5 @@ __all__ = [
     "format_duration",
     "format_timestamp",
     "mask_token",
-    "format_file_size",
-    "format_number",
     "parse_db_timestamp",
 ]

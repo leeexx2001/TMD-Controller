@@ -7,11 +7,9 @@ from unittest.mock import MagicMock
 
 from tmdc.utils.validators.auth import validate_auth_token, validate_ct0
 from tmdc.utils.validators.cookie import parse_cookie_string
-from tmdc.utils.validators.list_id import validate_list_id
-from tmdc.utils.validators.path import validate_path
 from tmdc.utils.validators.proxy import check_proxy_values
 from tmdc.utils.validators.timestamp import handle_numeric_id_ambiguity, parse_timestamp_target
-from tmdc.utils.validators.username import clean_username, is_reserved_path, validate_username
+from tmdc.utils.validators.username import clean_username, is_reserved_path
 
 
 class TestValidateAuthToken:
@@ -104,39 +102,6 @@ class TestCheckProxyValues:
         assert "非法字符" in msg
 
 
-class TestValidateUsername:
-    """用户名验证测试"""
-
-    def test_valid_username(self):
-        """测试有效的用户名"""
-        valid, msg = validate_username("elonmusk")
-        assert valid is True
-        assert msg == ""
-
-    def test_username_with_at_prefix(self):
-        """测试带 @ 前缀的用户名"""
-        valid, msg = validate_username("@elonmusk")
-        assert valid is True
-
-    def test_empty_username(self):
-        """测试空用户名"""
-        valid, msg = validate_username("")
-        assert valid is False
-        assert "不能为空" in msg
-
-    def test_too_long_username(self):
-        """测试过长的用户名"""
-        valid, msg = validate_username("a" * 16)
-        assert valid is False
-        assert "超出限制" in msg
-
-    def test_invalid_chars_username(self):
-        """测试包含非法字符的用户名"""
-        valid, msg = validate_username("invalid-user")
-        assert valid is False
-        assert "字母、数字和下划线" in msg
-
-
 class TestCleanUsername:
     """用户名清理测试"""
 
@@ -185,61 +150,6 @@ class TestIsReservedPath:
         """测试普通用户名"""
         assert is_reserved_path("elonmusk") is False
         assert is_reserved_path("twitter") is False
-
-
-class TestValidateListId:
-    """列表 ID 验证测试"""
-
-    def test_valid_list_id(self):
-        """测试有效的列表 ID"""
-        valid, msg = validate_list_id("1234567890")
-        assert valid is True
-        assert msg == ""
-
-    def test_empty_list_id(self):
-        """测试空列表 ID"""
-        valid, msg = validate_list_id("")
-        assert valid is False
-        assert "不能为空" in msg
-
-    def test_short_list_id(self):
-        """测试过短的列表 ID"""
-        valid, msg = validate_list_id("123")
-        assert valid is False
-        assert "长度过短" in msg
-
-    def test_non_numeric_list_id(self):
-        """测试非数字列表 ID"""
-        valid, msg = validate_list_id("abcdefghij")
-        assert valid is False
-        assert "纯数字" in msg
-
-
-class TestValidatePath:
-    """路径验证测试"""
-
-    def test_valid_path(self):
-        """测试有效路径"""
-        valid, msg = validate_path("/tmp/test.txt", check_parent=False)
-        assert valid is True
-        assert msg == ""
-
-    def test_empty_path(self):
-        """测试空路径"""
-        valid, msg = validate_path("")
-        assert valid is False
-        assert "不能为空" in msg
-
-    def test_path_must_exist(self):
-        """测试必须存在的路径"""
-        valid, msg = validate_path("/nonexistent/path", must_exist=True)
-        assert valid is False
-        assert "不存在" in msg
-
-    def test_path_with_path_object(self):
-        """测试 Path 对象"""
-        valid, msg = validate_path(Path("/tmp/test.txt"), check_parent=False)
-        assert valid is True
 
 
 class TestParseTimestampTarget:

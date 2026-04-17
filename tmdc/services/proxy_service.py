@@ -72,47 +72,34 @@ class ProxyService(IProxyService):
         self._proxy_reachable_cache: Optional[bool] = None
         self._proxy_check_time: float = 0.0
 
-    def check_reachable(
+    def check_proxy_reachable(
         self,
-        *,
         timeout: Optional[float] = None,
         use_cache: bool = True,
     ) -> bool:
         """检查代理是否可达。
 
         Args:
-            timeout: 超时时间（秒）
+            timeout: 超时时间（秒），默认使用 Constants.PROXY_TIMEOUT
             use_cache: 是否使用缓存
 
         Returns:
             代理是否可达
         """
-        if timeout is None:
-            timeout = Constants.PROXY_TIMEOUT
+        effective_timeout = timeout if timeout is not None else Constants.PROXY_TIMEOUT
 
         if use_cache and self._proxy_reachable_cache is not None:
             elapsed = time.time() - self._proxy_check_time
             if elapsed < self.PROXY_CACHE_TTL:
                 return self._proxy_reachable_cache
 
-        return self.check_proxy_reachable(timeout=timeout)
-
-    def check_proxy_reachable(self, timeout: float = 2.0) -> bool:
-        """同步检测代理端口是否可连接。
-
-        Args:
-            timeout: 超时时间（秒）
-
-        Returns:
-            代理是否可达
-        """
         if not self.config.use_proxy or not self.config.proxy_hostname:
             return False
 
         sock = None
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(timeout)
+            sock.settimeout(effective_timeout)
             result = sock.connect_ex((self.config.proxy_hostname, self.config.proxy_tcp_port))
             is_reachable = result == 0
 
@@ -125,28 +112,6 @@ class ProxyService(IProxyService):
         finally:
             if sock:
                 sock.close()
-
-    def save_config(
-        self,
-        hostname: str,
-        port: int,
-        use_proxy: bool,
-    ) -> Tuple[bool, str]:
-        """保存代理配置。
-
-        Args:
-            hostname: 代理主机名
-            port: 代理端口
-            use_proxy: 是否使用代理
-
-        Returns:
-            (成功标志, 错误消息)
-        """
-        return self.save_proxy_config(
-            hostname=hostname,
-            port=port,
-            use_proxy=use_proxy,
-        )
 
     def save_proxy_config(
         self,
@@ -176,7 +141,7 @@ class ProxyService(IProxyService):
         Returns:
             代理状态信息
         """
-        is_reachable = self.check_reachable(use_cache=True)
+        is_reachable = self.check_proxy_reachable(use_cache=True)
 
         return ProxyStatus(
             is_enabled=self.config.use_proxy,

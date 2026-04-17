@@ -177,7 +177,7 @@ class MainMenu(BaseMenu):
         print(f"  状态:       {status}")
 
         # 显示备用账号状态
-        cookies = self.cookie_service.load_cookies()
+        cookies = self.cookie_service.load_additional_cookies()
         cookie_count = len(cookies)
         if cookie_count > 0:
             cookie_status = f"🍪 {cookie_count}个备用"

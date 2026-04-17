@@ -127,43 +127,6 @@ class TestShowListWarning:
         assert "高级参数" in captured.out
 
 
-class TestShowBatchSummary:
-    """批量摘要显示测试"""
-
-    def test_show_batch_summary_success_only(self, capsys):
-        """测试仅成功的摘要"""
-        ui = UIHelper()
-        ui.show_batch_summary(total=10, success=10, failed=0)
-        captured = capsys.readouterr()
-        assert "总数: 10" in captured.out
-        assert "成功: 10" in captured.out
-        assert "失败: 0" in captured.out
-
-    def test_show_batch_summary_with_failures(self, capsys):
-        """测试带失败的摘要"""
-        ui = UIHelper()
-        ui.show_batch_summary(total=10, success=7, failed=3)
-        captured = capsys.readouterr()
-        assert "失败: 3" in captured.out
-
-    def test_show_batch_summary_with_failed_items(self, capsys):
-        """测试带失败项目的摘要"""
-        ui = UIHelper()
-        failed_items = ["user1", "user2", "user3"]
-        ui.show_batch_summary(total=10, success=7, failed=3, failed_items=failed_items)
-        captured = capsys.readouterr()
-        assert "失败项目列表" in captured.out
-        assert "user1" in captured.out
-
-    def test_show_batch_summary_many_failed_items(self, capsys):
-        """测试大量失败项目的摘要"""
-        ui = UIHelper()
-        failed_items = [f"user{i}" for i in range(15)]
-        ui.show_batch_summary(total=20, success=5, failed=15, failed_items=failed_items)
-        captured = capsys.readouterr()
-        assert "还有 5 个失败项目" in captured.out
-
-
 class TestConfirmAction:
     """确认操作测试"""
 

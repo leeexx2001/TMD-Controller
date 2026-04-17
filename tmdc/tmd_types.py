@@ -43,12 +43,6 @@ if TYPE_CHECKING:
 
 # ==================== 类型别名 ====================
 
-PathLike = Union[str, Path]
-"""路径类型别名"""
-
-JsonValue = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
-"""JSON 值类型别名"""
-
 CookieDict = Dict[str, str]
 """Cookie 字典类型别名"""
 
@@ -574,31 +568,15 @@ class IDatabaseService(Protocol):
         keyword: str,
         *,
         limit: Optional[int] = None,
+        default_limit: int = 50,
     ) -> List[Dict[str, Any]]:
         """
         搜索用户
 
         Args:
             keyword: 搜索关键词
-            limit: 返回结果数量限制
-
-        Returns:
-            用户信息列表
-        """
-        ...
-
-    def find_users_for_reset(
-        self,
-        keyword: str,
-        *,
-        limit: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
-        """
-        搜索用户（用于重置时间戳）
-
-        Args:
-            keyword: 搜索关键词
-            limit: 返回结果数量限制
+            limit: 返回结果数量限制（默认使用 default_limit）
+            default_limit: 默认限制数量（当 limit 为 None 时使用）
 
         Returns:
             用户信息列表
@@ -624,26 +602,13 @@ class IDatabaseService(Protocol):
             - screen_name: 用户名
             - name: 显示名称
             - entity_id: 用户实体 ID（可能为 None）
+            - is_accessible: 是否可访问（0=不可访问，1=可访问）
         """
         ...
 
     def check_list_metadata_exists(self, list_id: int) -> bool:
         """
         检查列表元数据是否存在（lsts 表）
-
-        Args:
-            list_id: 列表 ID
-
-        Returns:
-            列表是否存在
-        """
-        ...
-
-    def check_list_exists(self, list_id: int) -> bool:
-        """
-        检查列表元数据是否存在 - 别名方法
-
-        Deprecated: 使用 check_list_metadata_exists 代替
 
         Args:
             list_id: 列表 ID
@@ -747,6 +712,24 @@ class IDatabaseService(Protocol):
         """
         ...
 
+    def delete_user_project(
+        self,
+        uid: int,
+    ) -> Tuple[bool, str, Dict[str, Any]]:
+        """删除用户项目的所有数据库记录
+
+        级联删除 user_links、user_entities、user_previous_names、users 表中
+        与指定用户 ID 相关的所有记录。
+
+        Args:
+            uid: 用户 ID（Twitter 用户唯一标识符）
+
+        Returns:
+            Tuple[是否成功, 消息/错误信息, 各表删除统计字典]
+            统计字典格式: {"links": n, "entities": n, "names": n, "users": n}
+        """
+        ...
+
 
 @runtime_checkable
 class IProxyService(Protocol):
@@ -759,9 +742,8 @@ class IProxyService(Protocol):
     config: IConfig
     logger: ILogger
 
-    def check_reachable(
+    def check_proxy_reachable(
         self,
-        *,
         timeout: Optional[float] = None,
         use_cache: bool = True,
     ) -> bool:
@@ -769,42 +751,11 @@ class IProxyService(Protocol):
         检查代理是否可达
 
         Args:
-            timeout: 超时时间（秒）
+            timeout: 超时时间（秒），默认使用 Constants.PROXY_TIMEOUT
             use_cache: 是否使用缓存
 
         Returns:
             代理是否可达
-        """
-        ...
-
-    def check_proxy_reachable(self, timeout: float = 2.0) -> bool:
-        """
-        同步检测代理端口是否可连接
-
-        Args:
-            timeout: 超时时间（秒）
-
-        Returns:
-            代理是否可达
-        """
-        ...
-
-    def save_config(
-        self,
-        hostname: str,
-        port: int,
-        use_proxy: bool,
-    ) -> Tuple[bool, str]:
-        """
-        保存代理配置
-
-        Args:
-            hostname: 代理主机名
-            port: 代理端口
-            use_proxy: 是否使用代理
-
-        Returns:
-            (成功标志, 错误消息)
         """
         ...
 
@@ -848,33 +799,12 @@ class ICookieService(Protocol):
     config: IConfig
     logger: ILogger
 
-    def load_cookies(self) -> List[Dict[str, str]]:
-        """
-        加载 Cookie 列表
-
-        Returns:
-            Cookie 字典列表
-        """
-        ...
-
     def load_additional_cookies(self) -> List[Dict[str, str]]:
         """
         从 YAML 文件读取备用账号列表
 
         Returns:
             Cookie 字典列表
-        """
-        ...
-
-    def save_cookies(self, cookies: List[Dict[str, str]]) -> Tuple[bool, str]:
-        """
-        保存 Cookie 列表
-
-        Args:
-            cookies: Cookie 字典列表
-
-        Returns:
-            (成功标志, 错误消息)
         """
         ...
 
@@ -1097,23 +1027,6 @@ class ITimestampService(Protocol):
         """
         ...
 
-    def format_timestamp_display(
-        self,
-        timestamp: Optional[str],
-        *,
-        default_empty: str = "",
-    ) -> str:
-        """格式化时间戳显示
-
-        Args:
-            timestamp: 时间戳字符串
-            default_empty: 空值默认显示
-
-        Returns:
-            格式化后的时间戳字符串
-        """
-        ...
-
 
 @runtime_checkable
 class IInputParser(Protocol):
@@ -1176,16 +1089,6 @@ class OperationResult:
     code: str = ""
     data: Optional[Dict[str, Any]] = None
 
-    @property
-    def has_message(self) -> bool:
-        """检查是否有消息"""
-        return bool(self.message)
-
-    @property
-    def has_error(self) -> bool:
-        """检查是否有错误"""
-        return bool(self.error)
-
 
 @dataclass
 class BatchOperationResult(OperationResult):
@@ -1213,11 +1116,6 @@ class BatchOperationResult(OperationResult):
     success_count: int = 0
     failed_count: int = 0
     failed_items: List[str] = field(default_factory=list)
-
-    @property
-    def is_partial_success(self) -> bool:
-        """检查是否部分成功"""
-        return self.success_count > 0 and self.failed_count > 0
 
 
 @dataclass
@@ -1550,8 +1448,6 @@ def create_logger(name: str = "TMDController") -> logging.Logger:
 
 __all__ = [
     # 类型别名
-    "PathLike",
-    "JsonValue",
     "CookieDict",
     # Protocol 接口
     "ILogger",
