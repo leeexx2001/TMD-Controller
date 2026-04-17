@@ -16,6 +16,7 @@ from __future__ import annotations
 
 # 标准库
 import logging
+import subprocess
 import sys
 import warnings
 from logging.handlers import RotatingFileHandler
