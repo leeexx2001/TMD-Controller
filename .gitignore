@@ -102,3 +102,6 @@ releases/
 
 # Archive with Chinese name
 tmdc 归档.7z
+
+# IDE/Editor specific directories
+.trae/
