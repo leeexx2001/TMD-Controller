@@ -62,3 +62,33 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Compiled executables (source only, releases are in GitHub Releases)
+tmdc-full.exe
+tmdc-lite.exe
+*.exe
+
+# Build artifacts
+*.pyd
+*.dll
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Output directories
+output/
+out/
+release/
+releases/
+
+# Local data files
+*.db
+*.sqlite
+*.sqlite3
+
+# User-specific files
+*.user
+*.suo
