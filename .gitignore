@@ -92,3 +92,13 @@ releases/
 # User-specific files
 *.user
 *.suo
+
+# Archive files
+*.7z
+*.zip
+*.rar
+*.tar.gz
+*.tar
+
+# Archive with Chinese name
+tmdc 归档.7z
