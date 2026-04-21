@@ -116,7 +116,7 @@ class InputParser(IInputParser):
             match = pattern.search(cleaned)
             if match:
                 username = match.group(1).lower()
-                if not is_reserved_path(username) and not username.isdigit():
+                if not is_reserved_path(username):
                     return ("user", username, original)
 
         # 匹配 @username 格式
@@ -132,7 +132,6 @@ class InputParser(IInputParser):
             if (
                 len(username) <= C.USERNAME_MAX_LEN
                 and not is_reserved_path(username)
-                and not username.isdigit()
             ):
                 return ("user", username, original)
 
@@ -142,7 +141,7 @@ class InputParser(IInputParser):
 
         # 默认作为用户名处理
         username = cleaned.replace("@", "").replace(" ", "").strip()
-        if username and len(username) <= C.USERNAME_MAX_LEN and not username.isdigit():
+        if username and len(username) <= C.USERNAME_MAX_LEN:
             return ("user", username, original)
 
         return ("unknown", cleaned, original)

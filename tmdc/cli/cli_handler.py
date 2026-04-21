@@ -1026,7 +1026,7 @@ class CLIHandler:
                 return 1
 
             print(f"📝 开始下载 @{username} 的关注列表")
-            exit_code, _, _ = self.download_service.run_tmd(args=["--following", username])
+            exit_code, _, _ = self.download_service.run_tmd(args=["--foll", f"@{username}"])
 
             if exit_code == 0:
                 print(f"✅ @{username} 关注列表下载完成")
@@ -1056,7 +1056,7 @@ class CLIHandler:
 
                 print(f"📝 下载用户 Profile: @{clean_name}")
                 exit_code, _, _ = self.download_service.run_tmd(
-                    args=["--user", clean_name]
+                    args=["--user", f"@{clean_name}"]
                 )
 
                 if exit_code == 0:

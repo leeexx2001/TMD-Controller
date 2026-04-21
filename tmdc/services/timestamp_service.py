@@ -290,7 +290,7 @@ class TimestampService:
         if self.download_service is None:
             return OperationResult(success=False, error="下载服务不可用，无法创建用户")
 
-        tmd_args = ["-user", screen_name, "-mark-downloaded"]
+        tmd_args = ["-user", f"@{screen_name}", "-mark-downloaded"]
         if target_date is not None:
             mark_time = target_date.strftime("%Y-%m-%dT%H:%M:%S")
             tmd_args.extend(["-mark-time", mark_time])

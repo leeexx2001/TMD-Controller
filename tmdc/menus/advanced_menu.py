@@ -251,7 +251,7 @@ class AdvancedMenu(BaseMenu):
         print("  ✓ 适合快速扫描近期推文，可能遗漏历史失败项")
         print("  ⚠️ 注意：仍会下载媒体文件！并非仅转储元数据\n")
 
-        exit_code, _, _ = self.download_service.run_tmd(args=["--user", value, "--no-retry"])
+        exit_code, _, _ = self.download_service.run_tmd(args=["--user", f"@{value}", "--no-retry"])
 
         if exit_code == 0:
             print("✅ 下载完成！")
@@ -513,7 +513,7 @@ class AdvancedMenu(BaseMenu):
 
             # 执行 tmd --user 命令
             exit_code, stdout, stderr = self.download_service.run_tmd(
-                args=["--user", screen_name],
+                args=["--user", f"@{screen_name}"],
                 capture_output=True
             )
 
@@ -659,7 +659,7 @@ class AdvancedMenu(BaseMenu):
         print(f"\n📝 正在为 {username} 发送关注请求...")
         print("📝 发送成功后，你必须等待对方批准才能下载！")
 
-        exit_code, _, _ = self.download_service.run_tmd(args=["--auto-follow", "--user", username])
+        exit_code, _, _ = self.download_service.run_tmd(args=["--auto-follow", "--user", f"@{username}"])
 
         if exit_code == 0:
             print("✅ 关注请求已发送！")
@@ -921,7 +921,7 @@ class AdvancedMenu(BaseMenu):
                 return
 
             print(f"\n📝 开始下载 {target} 的关注列表...")
-            exit_code, _, _ = self.download_service.run_tmd(args=["--foll", target])
+            exit_code, _, _ = self.download_service.run_tmd(args=["--foll", f"@{target}"])
             if exit_code == 0:
                 print("✅ 关注列表下载完成！")
             else:
@@ -1011,11 +1011,11 @@ class AdvancedMenu(BaseMenu):
         """
         args = []
         for user in users:
-            args.extend(["--user", user])
+            args.extend(["--user", f"@{user}"])
         for lst in lists:
             args.extend(["--list", lst])
         for f in follows:
-            args.extend(["--foll", f])
+            args.extend(["--foll", f"@{f}"])
 
         if not args:
             print("📝 没有选择任何任务。")

@@ -62,7 +62,7 @@ class TMDConfig:
 
     # 日志配置
     log_level: str = "INFO"
-    log_max_bytes: int = 3 * 1024 * 1024
+    log_max_bytes: int = 2 * 1024 * 1024
     log_backup_count: int = 2
 
     # 自定义配置路径

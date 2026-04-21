@@ -86,7 +86,7 @@ class DownloadService:
         Returns:
             DownloadResult: 下载结果，包含所有信息
         """
-        args = ["--user", username]
+        args = ["--user", f"@{username}"]
         log_desc = f"用户 @{username}"
         if source:
             log_desc += f" (来源: {source})"
@@ -177,7 +177,7 @@ class DownloadService:
 
         args: List[str] = []
         for user in users:
-            args.extend(["--user", user])
+            args.extend(["--user", f"@{user}"])
         for list_id in lists:
             args.extend(["--list", list_id])
 
