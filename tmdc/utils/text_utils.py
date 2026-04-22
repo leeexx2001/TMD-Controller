@@ -2,7 +2,7 @@
 """
 文本处理工具模块
 
-提供文本处理相关功能，包括 LIKE 模式转义、字符串清理等。
+提供文本处理相关功能，包括 LIKE 模式转义、字符串清理、中文字符宽度计算等。
 """
 
 from __future__ import annotations
@@ -36,6 +36,36 @@ def escape_like_pattern(keyword: str, escape_char: str = "\\") -> str:
     return f"%{escaped}%"
 
 
+def display_width(s: str) -> int:
+    """计算字符串的显示宽度（考虑中文字符）
+
+    中文字符占2个字符宽度，英文字符占1个字符宽度。
+    用于终端对齐显示。
+
+    Args:
+        s: 输入字符串
+
+    Returns:
+        字符串的显示宽度
+
+    Examples:
+        >>> display_width("hello")
+        5
+        >>> display_width("你好")
+        4
+        >>> display_width("hello世界")
+        9
+    """
+    width = 0
+    for char in s:
+        if ord(char) > 127:  # 中文字符
+            width += 2
+        else:
+            width += 1
+    return width
+
+
 __all__ = [
     "escape_like_pattern",
+    "display_width",
 ]

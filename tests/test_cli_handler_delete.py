@@ -57,7 +57,7 @@ class TestHandleDeleteUser:
 
         args = Namespace(delete_user="12345")
 
-        with patch('builtins.input', return_value='DELETE'):
+        with patch('builtins.input', return_value='Y'):
             result = handler.handle_delete_user(args)
 
         assert result == 1
@@ -107,11 +107,11 @@ class TestHandleDeleteUser:
             {"id": 12345, "screen_name": "testuser", "name": "Test User"}
         ]
         mock_container.database_service.get_user_entity_info.return_value = None
+        mock_container.ui.confirm_action.return_value = False
 
         args = Namespace(delete_user="testuser")
 
-        with patch('builtins.input', return_value='no'):
-            result = handler.handle_delete_user(args)
+        result = handler.handle_delete_user(args)
 
         assert result == 130
 
@@ -133,7 +133,7 @@ class TestHandleDeleteUser:
 
         args = Namespace(delete_user="testuser")
 
-        with patch('builtins.input', return_value='DELETE'):
+        with patch('builtins.input', return_value='Y'):
             result = handler.handle_delete_user(args)
 
         assert result == 0
@@ -155,7 +155,7 @@ class TestHandleDeleteUser:
 
         args = Namespace(delete_user="12345")
 
-        with patch('builtins.input', return_value='DELETE'):
+        with patch('builtins.input', return_value='Y'):
             result = handler.handle_delete_user(args)
 
         assert result == 0
@@ -168,11 +168,11 @@ class TestHandleDeleteUser:
             {"id": 12345, "screen_name": "testuser", "name": "Test User"}
         ]
         mock_container.database_service.get_user_entity_info.return_value = None
+        mock_container.ui.confirm_action.return_value = False  # 模拟取消
 
         args = Namespace(delete_user="testuser")
 
-        with patch('builtins.input', side_effect=KeyboardInterrupt()):
-            result = handler.handle_delete_user(args)
+        result = handler.handle_delete_user(args)
 
         assert result == 130
 
@@ -191,7 +191,7 @@ class TestHandleDeleteUser:
 
         args = Namespace(delete_user="testuser")
 
-        with patch('builtins.input', return_value='DELETE'):
+        with patch('builtins.input', return_value='Y'):
             result = handler.handle_delete_user(args)
 
         assert result == 1

@@ -77,42 +77,48 @@ class ProxyMenu(BaseMenu):
 
     def show(self) -> None:
         """显示代理管理菜单"""
+        options = [
+            ("1", "开启代理", "启用代理连接"),
+            ("2", "关闭代理", "禁用代理连接"),
+            ("3", "修改代理地址", "更改主机和端口"),
+            ("4", "测试端口", "检查代理端口是否可达"),
+            ("5", "深度测试", "通过代理访问 Twitter"),
+            ("0", "返回上级菜单", ""),
+        ]
+
+        handlers = {
+            "1": lambda: self._toggle_proxy(True),
+            "2": lambda: self._toggle_proxy(False),
+            "3": self._edit_proxy_settings,
+            "4": self._test_proxy_port,
+            "5": self._test_proxy_http,
+        }
+
         while True:
             self.ui.clear_screen()
             self.ui.show_header("代理管理")
 
             status = "开启" if self.config.use_proxy else "关闭"
-            print(f"  代理状态:   {status}")
-            print(f"  代理地址:   {self.config.proxy_hostname}:{self.config.proxy_tcp_port}")
+            self.ui.print_status_line("代理状态", status)
+            self.ui.print_status_line(
+                "代理地址", f"{self.config.proxy_hostname}:{self.config.proxy_tcp_port}"
+            )
 
             self._display_reachability()
 
             self.ui.print_separator()
+            for key, label, desc in options:
+                self.ui.print_menu_option(key, label, desc)
+            self.ui.print_separator()
 
-            print("  [1] 开启代理      → 启用代理连接")
-            print("  [2] 关闭代理      → 禁用代理连接")
-            print("  [3] 修改代理地址  → 更改主机和端口")
-            print("  [4] 测试端口      → 检查代理端口是否可达")
-            print("  [5] 深度测试      → 通过代理访问 Twitter")
-            print("  [0] 返回上级菜单\n")
-
-            choice = self.ui.safe_input("请选择 [1-5,0]: ", allow_empty=True)
-            if choice is None:
-                break
-            choice = choice.upper()
+            choice = self._get_menu_choice("请选择 [1-5,0]")
 
             if choice == "0":
                 break
-            elif choice == "1":
-                self._toggle_proxy(True)
-            elif choice == "2":
-                self._toggle_proxy(False)
-            elif choice == "3":
-                self._edit_proxy_settings()
-            elif choice == "4":
-                self._test_proxy_port()
-            elif choice == "5":
-                self._test_proxy_http()
+
+            handler = handlers.get(choice)
+            if handler:
+                handler()
             else:
                 continue
 
@@ -129,11 +135,11 @@ class ProxyMenu(BaseMenu):
 
         if self.config.use_proxy:
             if is_reachable:
-                print("  连通性:     ✅ 端口可达")
+                self.ui.print_status_line("连通性", "✅ 端口可达")
             else:
-                print("  连通性:     ❌ 端口不可达")
+                self.ui.print_status_line("连通性", "❌ 端口不可达")
         else:
-            print("  连通性:     - (代理未启用)")
+            self.ui.print_status_line("连通性", "- (代理未启用)")
         print()
 
     def _toggle_proxy(self, enable: bool) -> None:

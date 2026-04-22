@@ -95,100 +95,104 @@ class ConfigMenu(BaseMenu):
         """
         显示配置向导菜单（整合版 - v4.8.0 直接管理 TMD 核心配置）
         """
+        options = [
+            ("1", "TMD核心配置", "auth_token/ct0/root_path（运行必需）"),
+            ("2", "多账号管理", "多Cookie轮询（突破限速）"),
+            ("3", "代理管理", "代理设置与连通性测试"),
+            ("4", "固定列表管理", "配置常用列表ID（配合 [Q] 快速下载）"),
+            ("5", "文件下载设置", "分批大小、双轨风控延迟"),
+            ("6", "列表间间隔", "设置 [Q] 键批量下载时的间隔"),
+            ("7", "迁移路径", "修改数据库中的下载路径（移动文件夹后使用）"),
+            ("0", "返回主菜单", ""),
+        ]
+
+        handlers = {
+            "1": self._config_tmd_core,
+            "2": self._show_cookie_menu,
+            "3": self._show_proxy_menu,
+            "4": self._show_quick_list_menu,
+            "5": self._config_file_batch_settings,
+            "6": self._config_quick_list_interval,
+            "7": self._show_path_menu,
+        }
+
         while True:
             self.ui.clear_screen()
             self.ui.show_header("配置向导")
 
-            # TMD 核心状态
-            self._display_core_status()
-
-            # 备用账号状态
-            self._display_cookie_status()
-
-            # 代理设置状态
-            self._display_proxy_status()
-
-            # 文件分批状态
-            print(f"  文件分批:   {self.config.file_batch_size} 行/批")
-
-            # 风控延迟状态
-            self._display_delay_status()
-
-            # 下载线程状态
-            self._display_routine_status()
-
-            # 固定列表状态
-            self._display_quick_list_status()
-
-            # 列表间间隔状态
-            self._display_interval_status()
+            # 状态显示
+            self.ui.print_status_line("TMD核心", self._get_core_status())
+            self.ui.print_status_line("备用账号", self._get_cookie_status())
+            self.ui.print_status_line("代理设置", self._get_proxy_status())
+            self.ui.print_status_line("文件分批", f"{self.config.file_batch_size} 行/批")
+            self.ui.print_status_line("风控延迟", self._get_delay_status())
+            self.ui.print_status_line("下载线程", self._get_routine_status())
+            self.ui.print_status_line("固定列表", self._get_quick_list_status())
+            self.ui.print_status_line("列表间隔", self._get_interval_status())
 
             self.ui.print_separator()
+            for key, label, desc in options:
+                self.ui.print_menu_option(key, label, desc)
+            self.ui.print_separator()
 
-            # 操作选项
-            print("  [1] TMD核心配置   → auth_token/ct0/root_path（运行必需）")
-            print("  [2] 多账号管理    → 多Cookie轮询（突破限速）")
-            print("  [3] 代理管理      → 代理设置与连通性测试")
-            print("  [4] 固定列表管理  → 配置常用列表ID（配合 [Q] 快速下载）")
-            print("  [5] 文件下载设置  → 分批大小、双轨风控延迟")
-            print("  [6] 列表间间隔    → 设置 [Q] 键批量下载时的间隔")
-            print("  [7] 迁移路径      → 修改数据库中的下载路径（移动文件夹后使用）")
-            print("  [0] 返回主菜单\n")
-
-            self.ui.flush_keyboard_buffer()
-            input_str = self.ui.safe_input("请选择 [0-7]: ")
-            choice = input_str.strip().upper() if input_str else ""
+            choice = self._get_menu_choice("请选择 [0-7]")
 
             if choice == "0":
                 break
-            elif choice == "1":
-                self._config_tmd_core()
-            elif choice == "2":
-                from .cookie_menu import CookieMenu
 
-                cookie_menu = CookieMenu(
-                    self.ui, self.logger, self.config, self.cookie_service, self.config_exists
-                )
-                cookie_menu.show()
-            elif choice == "3":
-                from .proxy_menu import ProxyMenu
-
-                proxy_menu = ProxyMenu(self.ui, self.logger, self.config, self.proxy_service)
-                proxy_menu.show()
-            elif choice == "4":
-                from .quick_list_menu import QuickListMenu
-
-                quick_list_menu = QuickListMenu(
-                    self.ui,
-                    self.logger,
-                    self.config,
-                    self.download_service,
-                    self.database_service,
-                )
-                quick_list_menu.show()
-            elif choice == "5":
-                self._config_file_batch_settings()
-            elif choice == "6":
-                self._config_quick_list_interval()
-            elif choice == "7":
-                from .path_menu import PathMenu
-
-                path_menu = PathMenu(self.ui, self.logger, self.config, self.database_service)
-                path_menu.show()
+            handler = handlers.get(choice)
+            if handler:
+                handler()
             else:
                 continue
 
+    def _show_cookie_menu(self) -> None:
+        """显示Cookie菜单"""
+        from .cookie_menu import CookieMenu
+
+        cookie_menu = CookieMenu(
+            self.ui, self.logger, self.config, self.cookie_service, self.config_exists
+        )
+        cookie_menu.show()
+
+    def _show_proxy_menu(self) -> None:
+        """显示代理菜单"""
+        from .proxy_menu import ProxyMenu
+
+        proxy_menu = ProxyMenu(self.ui, self.logger, self.config, self.proxy_service)
+        proxy_menu.show()
+
+    def _show_quick_list_menu(self) -> None:
+        """显示固定列表菜单"""
+        from .quick_list_menu import QuickListMenu
+
+        quick_list_menu = QuickListMenu(
+            self.ui,
+            self.logger,
+            self.config,
+            self.download_service,
+            self.database_service,
+        )
+        quick_list_menu.show()
+
+    def _show_path_menu(self) -> None:
+        """显示路径菜单"""
+        from .path_menu import PathMenu
+
+        path_menu = PathMenu(self.ui, self.logger, self.config, self.database_service)
+        path_menu.show()
+
     # ==================== 私有方法：状态显示 ====================
 
-    def _display_core_status(self) -> None:
-        """显示 TMD 核心状态"""
+    def _get_core_status(self) -> str:
+        """获取 TMD 核心状态"""
         if self.config.auth_token and self.config.ct0 and self.config.root_path:
             token_valid, _ = validate_auth_token(self.config.auth_token)
             ct0_valid, _ = validate_ct0(self.config.ct0)
             if token_valid and ct0_valid:
-                core_status = "已配置"
+                return "已配置"
             else:
-                core_status = "格式异常"
+                return "格式异常"
         else:
             missing = []
             if not self.config.auth_token:
@@ -197,30 +201,26 @@ class ConfigMenu(BaseMenu):
                 missing.append("ct0")
             if not self.config.root_path:
                 missing.append("root_path")
-            core_status = f"缺少: {', '.join(missing)}"
-        print(f"  TMD 核心:   {core_status}")
+            return f"缺少: {', '.join(missing)}"
 
-    def _display_cookie_status(self) -> None:
-        """显示备用账号状态"""
+    def _get_cookie_status(self) -> str:
+        """获取备用账号状态"""
         cookie_count = len(self.cookie_service.load_additional_cookies())
         disabled_flag = self.config.cookie_file.with_suffix(".yaml.disabled")
         if disabled_flag.exists():
-            cookie_status = f"{cookie_count}个 [已禁用]"
+            return f"{cookie_count}个 [已禁用]"
         elif cookie_count > 0:
-            cookie_status = f"{cookie_count}个 [已启用]"
+            return f"{cookie_count}个 [已启用]"
         else:
-            cookie_status = "未配置"
-        print(f"  备用账号:   {cookie_status}")
+            return "未配置"
 
-    def _display_proxy_status(self) -> None:
-        """显示代理设置状态"""
+    def _get_proxy_status(self) -> str:
+        """获取代理设置状态"""
         proxy_status = "开启" if self.config.use_proxy else "关闭"
-        print(
-            f"  代理设置:   {self.config.proxy_hostname}:{self.config.proxy_tcp_port} [{proxy_status}]"
-        )
+        return f"{self.config.proxy_hostname}:{self.config.proxy_tcp_port} [{proxy_status}]"
 
-    def _display_delay_status(self) -> None:
-        """显示风控延迟状态"""
+    def _get_delay_status(self) -> str:
+        """获取风控延迟状态"""
         delays = []
         if self.config.is_batch_delay_success_enabled:
             delays.append(
@@ -230,31 +230,28 @@ class ConfigMenu(BaseMenu):
             delays.append(
                 f"失败:{self.config.batch_delay_fail_min}-{self.config.batch_delay_fail_max}s"
             )
-        print(f"  风控延迟:   {', '.join(delays) if delays else '禁用'}")
+        return ", ".join(delays) if delays else "禁用"
 
-    def _display_routine_status(self) -> None:
-        """显示下载线程状态"""
-        routine_display = (
+    def _get_routine_status(self) -> str:
+        """获取下载线程状态"""
+        return (
             "自动(CPUx10)"
             if self.config.max_download_routine == 0
             else f"{self.config.max_download_routine}线程"
         )
-        print(f"  下载线程:   {routine_display}")
 
-    def _display_quick_list_status(self) -> None:
-        """显示固定列表状态"""
+    def _get_quick_list_status(self) -> str:
+        """获取固定列表状态"""
         list_count = len(self.config.quick_list_ids)
-        list_status = f"已配置 {list_count} 个" if list_count > 0 else "未配置"
-        print(f"  固定列表:   {list_status}")
+        return f"已配置 {list_count} 个" if list_count > 0 else "未配置"
 
-    def _display_interval_status(self) -> None:
-        """显示列表间间隔状态"""
-        interval_status = (
+    def _get_interval_status(self) -> str:
+        """获取列表间间隔状态"""
+        return (
             f"{self.config.quick_list_interval}秒"
             if self.config.quick_list_interval > 0
             else "禁用"
         )
-        print(f"  列表间隔:   {interval_status}\n")
 
     # ==================== 私有方法：TMD 核心配置 ====================
 
@@ -281,11 +278,11 @@ class ConfigMenu(BaseMenu):
             self.ui.print_separator()
 
             # 操作选项
-            print("  [1] 修改 Cookie      → 同时设置 auth_token 和 ct0")
-            print("  [2] 修改下载路径     → 媒体文件保存位置")
-            print("  [3] 修改下载线程数   → 并发下载数量（0=自动计算）")
-            print("  [4] 智能导入         → 粘贴浏览器 Cookie 字符串自动提取")
-            print("  [0] 返回上级菜单\n")
+            self.ui.print_menu_option("1", "修改 Cookie", "同时设置 auth_token 和 ct0")
+            self.ui.print_menu_option("2", "修改下载路径", "媒体文件保存位置")
+            self.ui.print_menu_option("3", "修改下载线程数", "并发下载数量（0=自动计算）")
+            self.ui.print_menu_option("4", "智能导入", "粘贴浏览器 Cookie 字符串自动提取")
+            self.ui.print_menu_option("0", "返回上级菜单", "")
             print("提示: 从浏览器开发者工具获取 auth_token 和 ct0")
             print("       修改后立即生效，无需重启程序")
 
@@ -314,30 +311,30 @@ class ConfigMenu(BaseMenu):
         """显示 auth_token 状态"""
         if self.config.auth_token:
             valid, err = validate_auth_token(self.config.auth_token)
-            status = " 有效" if valid else f"  {err}"
+            status = "有效" if valid else err
             masked = mask_token(self.config.auth_token)
-            print(f"  auth_token: {masked} {status}")
+            self.ui.print_status_line("auth_token", masked, status)
         else:
-            print("  auth_token: [未配置]")
+            self.ui.print_status_line("auth_token", "[未配置]")
 
     def _display_ct0_status(self) -> None:
         """显示 ct0 状态"""
         if self.config.ct0:
             valid, err = validate_ct0(self.config.ct0)
-            status = " 有效" if valid else f"  {err}"
+            status = "有效" if valid else err
             masked = mask_token(self.config.ct0)
-            print(f"  ct0:        {masked} {status}")
+            self.ui.print_status_line("ct0", masked, status)
         else:
-            print("  ct0:        [未配置]")
+            self.ui.print_status_line("ct0", "[未配置]")
 
     def _display_root_path_status(self) -> None:
         """显示下载路径状态"""
         if self.config.root_path:
             expanded = str(Path(self.config.root_path).expanduser())
-            exists = "" if Path(expanded).exists() else "  (不存在，将自动创建)"
-            print(f"  下载路径:   {expanded} {exists}")
+            exists = "" if Path(expanded).exists() else "(不存在，将自动创建)"
+            self.ui.print_status_line("下载路径", expanded, exists)
         else:
-            print("  下载路径:   [未配置]")
+            self.ui.print_status_line("下载路径", "[未配置]")
 
     def _display_max_routine_status(self) -> None:
         """显示下载线程状态"""
@@ -345,7 +342,8 @@ class ConfigMenu(BaseMenu):
             routine_desc = "自动 (CPUx10, 封顶100)"
         else:
             routine_desc = f"{self.config.max_download_routine} 线程"
-        print(f"  下载线程:   {routine_desc}\n")
+        self.ui.print_status_line("下载线程", routine_desc)
+        print()
 
     # ==================== 私有方法：编辑功能 ====================
 
@@ -443,9 +441,7 @@ class ConfigMenu(BaseMenu):
             if not path_obj.exists():
                 print(f"\n 路径不存在: {expanded}")
                 print("   程序将在首次下载时自动创建该目录")
-                confirm_str = self.ui.safe_input("   确认使用此路径? [Y/N]: ")
-                confirm = confirm_str.strip().upper() if confirm_str else ""
-                if confirm != "Y":
+                if not self.ui.confirm_action("确认使用此路径? [y/N]", explicit=True):
                     print(" 已取消")
                     self.ui.pause()
                     return
@@ -544,8 +540,8 @@ class ConfigMenu(BaseMenu):
         ct0 = parsed.get("ct0", "")
 
         print("\n 解析成功：")
-        print(f"  auth_token: {mask_token(auth_token)} ({len(auth_token)}字符)")
-        print(f"  ct0:        {mask_token(ct0)} ({len(ct0)}字符)")
+        self.ui.print_status_line("auth_token", f"{mask_token(auth_token)} ({len(auth_token)}字符)")
+        self.ui.print_status_line("ct0", f"{mask_token(ct0)} ({len(ct0)}字符)")
 
         # 验证格式
         valid_t, err_t = validate_auth_token(auth_token)
@@ -585,7 +581,7 @@ class ConfigMenu(BaseMenu):
             self.ui.show_header("文件下载设置")
 
             # 状态显示
-            print(f"  分批大小:   {self.config.file_batch_size} 行/批 (范围1-50)")
+            self.ui.print_status_line("分批大小", f"{self.config.file_batch_size} 行/批 (范围1-50)")
 
             s_status = (
                 f"{self.config.batch_delay_success_min}-{self.config.batch_delay_success_max}秒"
@@ -598,16 +594,17 @@ class ConfigMenu(BaseMenu):
                 else "禁用"
             )
 
-            print(f"  成功延迟:   {s_status}")
-            print(f"  失败延迟:   {f_status}\n")
+            self.ui.print_status_line("成功延迟", s_status)
+            self.ui.print_status_line("失败延迟", f_status)
+            print()
 
             self.ui.print_separator()
 
             # 操作选项
-            print("  [1] 修改分批大小 → 设置文件导入时的批次大小")
-            print("  [2] 修改成功延迟 → 批次成功后延迟（防压力）")
-            print("  [3] 修改失败延迟 → 批次失败后延迟（防风控）")
-            print("  [0] 返回上级菜单\n")
+            self.ui.print_menu_option("1", "修改分批大小", "设置文件导入时的批次大小")
+            self.ui.print_menu_option("2", "修改成功延迟", "批次成功后延迟（防压力）")
+            self.ui.print_menu_option("3", "修改失败延迟", "批次失败后延迟（防风控）")
+            self.ui.print_menu_option("0", "返回上级菜单", "")
 
             print(" 输入格式: 最小值 最大值（如 4 9），输入 0 0 表示禁用")
             print("       直接回车保持当前设置不变")
@@ -765,13 +762,14 @@ class ConfigMenu(BaseMenu):
                 if self.config.quick_list_interval > 0
                 else "禁用"
             )
-            print(f"  列表间隔:   {interval_status} ([Q]键批量下载时使用)\n")
+            self.ui.print_status_line("列表间隔", f"{interval_status} ([Q]键批量下载时使用)")
+            print()
 
             self.ui.print_separator()
 
             # 操作选项
-            print("  [1] 修改列表间隔 → 设置 [Q] 键下载时的列表间延迟")
-            print("  [0] 返回上级菜单\n")
+            self.ui.print_menu_option("1", "修改列表间隔", "设置 [Q] 键下载时的列表间延迟")
+            self.ui.print_menu_option("0", "返回上级菜单", "")
 
             print(" 范围: 0-300 秒，0 表示禁用")
             print("       直接回车保持当前设置不变")

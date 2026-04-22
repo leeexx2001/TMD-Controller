@@ -70,52 +70,55 @@ class CookieMenu(BaseMenu):
     def show(self) -> None:
         """显示 Cookie 管理菜单。"""
         while True:
-            self.ui.clear_screen()
-            self.ui.show_header("备用账号管理（突破限速）")
-
             cookies = self.cookie_service.load_additional_cookies()
 
             disabled_flag = self.config.cookie_file.with_suffix(".yaml.disabled")
             is_disabled = disabled_flag.exists() and not self.config.cookie_file.exists()
 
-            if self.config_exists:
-                print("  主账号状态: [已配置]")
-            else:
-                print("  主账号状态: [未配置]")
-
+            main_status = "已配置" if self.config_exists else "未配置"
             if is_disabled:
                 actual_count = len(cookies) if cookies else 0
-                print(f"  备用账号数: {actual_count} 个 [⚠️ 已暂时禁用]")
+                cookie_status = f"{actual_count} 个 [⚠️ 已暂时禁用]"
             else:
-                print(f"  备用账号数: {len(cookies)} 个")
-                if cookies:
-                    print(f"  轮询状态:   {self.ICON_COOKIE} 已启用轮询下载（自动切换账号）")
-            print(f"  文件位置:   {self.config.cookie_file}")
-            print()
+                cookie_status = f"{len(cookies)} 个"
 
-            self.ui.print_separator()
+            status_lines = [
+                ("主账号状态", main_status, ""),
+                ("备用账号数", cookie_status, ""),
+            ]
 
-            print("  [1] 添加新账号    → 手动输入 auth_token 和 ct0")
-            print("  [2] 智能导入      → 粘贴浏览器 Cookie 字符串自动提取")
-            print("  [3] 查看账号      → 脱敏显示所有备用账号")
-            print("  [4] 删除账号      → 移除不需要的账号")
+            if not is_disabled and cookies:
+                status_lines.append(("轮询状态", f"{self.ICON_COOKIE} 已启用轮询下载", ""))
+
+            status_lines.append(("文件位置", str(self.config.cookie_file), ""))
+
+            options = [
+                ("1", "添加新账号", "手动输入 auth_token 和 ct0"),
+                ("2", "智能导入", "粘贴浏览器 Cookie 字符串自动提取"),
+                ("3", "查看账号", "脱敏显示所有备用账号"),
+                ("4", "删除账号", "移除不需要的账号"),
+                (
+                    "5",
+                    "恢复启用" if is_disabled else "暂时禁用",
+                    "重新启用备用账号轮询" if is_disabled else "临时停用但不删除账号数据",
+                ),
+                ("0", "返回上级菜单", ""),
+            ]
+
+            hints = []
             if is_disabled:
-                print("  [5] 恢复启用      → 重新启用备用账号轮询")
+                hints.append("当前备用账号已被暂时禁用，下载时将不使用轮询")
             else:
-                print("  [5] 暂时禁用      → 临时停用但不删除账号数据")
+                hints.append("备用账号仅用于提升下载速度")
 
-            print("  [0] 返回上级菜单")
-            print()
+            self._renderer.render_menu(
+                title="备用账号管理（突破限速）",
+                options=options,
+                status_lines=status_lines,
+                hints=hints,
+            )
 
-            if is_disabled:
-                print("💡 提示: 当前备用账号已被暂时禁用，下载时将不使用轮询")
-            else:
-                print("💡 提示: 备用账号仅用于提升下载速度")
-
-            choice = self.ui.safe_input("\n请选择 [1-5,0]: ", allow_empty=True)
-            if choice is None:
-                break
-            choice = choice.upper()
+            choice = self._get_menu_choice()
 
             if choice == "0":
                 break
@@ -207,8 +210,8 @@ class CookieMenu(BaseMenu):
             return
 
         print("\n📝 解析成功：")
-        print(f"  auth_token: {mask_token(parsed['auth_token'])}")
-        print(f"  ct0:        {mask_token(parsed['ct0'])}")
+        self.ui.print_status_line("auth_token", mask_token(parsed['auth_token']))
+        self.ui.print_status_line("ct0", mask_token(parsed['ct0']))
 
         if self.ui.confirm_action("确认添加此账号? [y/N]", explicit=True):
             self._save_new_cookie(parsed["auth_token"], parsed["ct0"])

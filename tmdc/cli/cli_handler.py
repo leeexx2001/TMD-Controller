@@ -446,13 +446,7 @@ class CLIHandler:
             return 1
 
         # 二次确认
-        try:
-            confirm = input(f"确认删除 @{screen_name} 的所有数据? 输入 DELETE 确认: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\n📝 已取消")
-            return 130
-
-        if confirm.upper() != "DELETE":
+        if not self.container.ui.confirm_action(f"确认删除 @{screen_name} 的所有数据?", explicit=True):
             print("📝 已取消删除操作")
             return 130
 
@@ -803,12 +797,6 @@ class CLIHandler:
         lists = [v for t, v in all_parsed if t == "list"]
 
         print(f"📝 解析结果: {len(users)} 个用户, {len(lists)} 个列表")
-
-        if not self.container.ui.headless_mode:
-            confirm = input("\n确认执行? [Y/N]: ").strip().upper()
-            if confirm != "Y":
-                print("已取消")
-                return 1
 
         failed = []
         for user in users:

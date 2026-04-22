@@ -71,59 +71,43 @@ class AdvancedMenu(BaseMenu):
 
     def show(self) -> None:
         """显示高级下载菜单"""
-        while True:
-            self.ui.clear_screen()
-            self.ui.show_header("高级下载选项（按输入源分类）")
+        options = [
+            ("1", "单个输入", "精确控制单个用户/列表参数"),
+            ("2", "批量输入", "多用户名/列表ID混合"),
+            ("3", "文件导入", "从文本文件读取任务列表（支持双轨风控延迟）"),
+            ("4", "关注下载", "下载某账号的全部关注对象"),
+            ("5", "组合模式", "自定义混合任务（用户+列表+关注）"),
+            ("6", "禁用重试", "单用户下载（失败不自动重试）"),
+            ("7", "自动关注", "向私密账号发送关注请求"),
+            ("8", "重置全量", "重置时间戳后全量下载\n"),
+            ("L", "孤立用户", "列出未关联列表的用户"),
+            ("D", "删除项目", "从数据库中彻底删除某用户的所有数据"),
+            ("T", "时间戳管理", "设置/重置同步时间戳，控制下载范围"),
+            ("R", "恢复下载", "续传未完成任务"),
+            ("0", "返回主菜单", ""),
+        ]
 
-            print("  [1] 单个输入    → 精确控制单个用户/列表参数")
-            print("  [2] 批量输入    → 多用户名/列表ID混合")
-            print("  [3] 文件导入    → 从文本文件读取任务列表（支持双轨风控延迟）")
-            print("  [4] 关注下载    → 下载某账号的全部关注对象")
-            print("  [5] 组合模式    → 自定义混合任务（用户+列表+关注）")
-            print("  [6] 禁用重试    → 单用户下载（失败不自动重试）")
-            print("  [7] 自动关注    → 向私密账号发送关注请求")
-            print("  [8] 重置全量    → 重置时间戳后全量下载")
-            print("  [9] 孤立用户    → 列出未关联列表的用户\n")
-            print("  [D] 删除项目    → 从数据库中彻底删除某用户的所有数据")
-            print("  [T] 时间戳管理  → 设置/重置同步时间戳，控制下载范围")
-            print("  [R] 恢复下载    → 续传未完成任务")
-            print("  [0] 返回主菜单")
-            self.ui.print_separator()
-            print("💡 双轨风控延迟配置在 [C]→[5] 中设置（区分成功/失败）")
+        handlers = {
+            "1": self._advanced_single_input,
+            "2": self._advanced_batch_input,
+            "3": self.menu_file_batch,
+            "4": self.menu_following,
+            "5": self.menu_combo,
+            "6": self._advanced_no_retry_mode,
+            "7": self._menu_auto_follow,
+            "8": self._menu_reset_time_download,
+            "L": self._menu_unlinked_users,
+            "D": self._menu_delete_user_project,
+            "T": self._menu_soft_reset,
+            "R": self._menu_resume,
+        }
 
-            choice = self.ui.safe_input("\n选择 [1-9,D,T,R,0]: ", allow_empty=True)
-            if choice is None:
-                continue
-            choice = choice.upper()
-
-            if choice == "0":
-                break
-            elif choice == "R":
-                self._menu_resume()
-            elif choice == "1":
-                self._advanced_single_input()
-            elif choice == "2":
-                self._advanced_batch_input()
-            elif choice == "3":
-                self.menu_file_batch()
-            elif choice == "4":
-                self.menu_following()
-            elif choice == "5":
-                self.menu_combo()
-            elif choice == "6":
-                self._advanced_no_retry_mode()
-            elif choice == "7":
-                self._menu_auto_follow()
-            elif choice == "8":
-                self._menu_reset_time_download()
-            elif choice == "9":
-                self._menu_unlinked_users()
-            elif choice == "D":
-                self._menu_delete_user_project()
-            elif choice == "T":
-                self._menu_soft_reset()
-            else:
-                continue
+        self._run_menu_loop(
+            title="高级下载选项（按输入源分类）",
+            options=options,
+            handlers=handlers,
+            hints=["双轨风控延迟配置在 [C]→[5] 中设置（区分成功/失败）"],
+        )
 
     # ==================== 菜单处理方法 ====================
 
@@ -595,9 +579,7 @@ class AdvancedMenu(BaseMenu):
             print(f"   下载实体: {entity_count} 个")
         print()
 
-        confirm_text = f"确认删除 @{screen_name} 的所有数据? 输入 DELETE 确认: "
-        confirm = self.ui.safe_input(confirm_text, allow_empty=True)
-        if not confirm or confirm.upper() != "DELETE":
+        if not self.ui.confirm_action(f"确认删除 @{screen_name} 的所有数据? [y/N]", explicit=True):
             print("📝 已取消删除操作")
             self.ui.pause()
             return
@@ -915,8 +897,7 @@ class AdvancedMenu(BaseMenu):
             print(f"\n⚠️ 你即将下载 {target} 关注的所有用户！")
             print("⚠️ 根据关注数量，这可能需要很长时间！")
 
-            confirm = self.ui.safe_input("\n请输入 YES 确认继续: ", allow_empty=True)
-            if not confirm or confirm.upper() != "YES":
+            if not self.ui.confirm_action("确认下载关注列表? [y/N]", explicit=True):
                 print("📝 已取消")
                 return
 
@@ -986,10 +967,10 @@ class AdvancedMenu(BaseMenu):
 
         print("\n📝 识别结果：")
         len(users) + len(lists)
-        print(f"  用户: {len(users)} 个")
-        print(f"  列表: {len(lists)} 个")
+        self.ui.print_status_line("用户", f"{len(users)} 个")
+        self.ui.print_status_line("列表", f"{len(lists)} 个")
         if follows:
-            print(f"  关注: {', '.join(follows[:3])}" + ("..." if len(follows) > 3 else ""))
+            self.ui.print_status_line("关注", ', '.join(follows[:3]) + ("..." if len(follows) > 3 else ""))
 
         success, _ = self._execute_combo(users, lists, follows)
         if not success:

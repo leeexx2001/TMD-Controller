@@ -71,10 +71,10 @@ class TimestampMenu(BaseMenu):
             keyword = self.ui.safe_input("搜索 (0返回): ", allow_empty=True)
             if not keyword:
                 continue
+
+            keyword = keyword.strip().upper()
             if keyword == "0":
                 break
-
-            keyword = keyword.strip()
             if not keyword:
                 continue
 
@@ -228,8 +228,7 @@ class TimestampMenu(BaseMenu):
             return
 
         print(f"\n📝 用户 @{screen_name} 不在数据库中")
-        create = self.ui.safe_input("创建并设置时间戳? [Y/N]: ", allow_empty=True)
-        if not create or create.upper() != "Y":
+        if not self.ui.confirm_action("创建并设置时间戳? [Y/n]", explicit=False):
             return
 
         time_input = self.ui.safe_input("时间 (回车=全量下载): ", allow_empty=True)
@@ -257,8 +256,7 @@ class TimestampMenu(BaseMenu):
             return
 
         print(f"\n📝 列表 {list_id} 不在数据库中")
-        create = self.ui.safe_input("创建并设置时间戳? [Y/N]: ", allow_empty=True)
-        if not create or create.upper() != "Y":
+        if not self.ui.confirm_action("创建并设置时间戳? [Y/n]", explicit=False):
             return
 
         time_input = self.ui.safe_input("时间 (回车=全量下载): ", allow_empty=True)

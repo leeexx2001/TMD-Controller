@@ -175,20 +175,20 @@ def _show_status(config, ui) -> int:
     ui.clear_screen()
     ui.show_header("配置状态")
 
-    print(f"\n配置文件: {config.config_file}")
-    print(f"下载路径: {config.root_path or '未设置'}")
-    print(f"代理状态: {'已启用' if config.use_proxy else '未启用'}")
+    ui.print_status_line("配置文件", str(config.config_file))
+    ui.print_status_line("下载路径", config.root_path or "未设置")
+    ui.print_status_line("代理状态", "已启用" if config.use_proxy else "未启用")
     if config.use_proxy:
-        print(f"代理地址: {config.proxy_hostname}:{config.proxy_tcp_port}")
-    print(f"最大线程数: {config.max_download_routine}")
-    print(f"批量大小: {config.file_batch_size}")
-    print(f"固定列表: {len(config.quick_list_ids)} 个")
+        ui.print_status_line("代理地址", f"{config.proxy_hostname}:{config.proxy_tcp_port}")
+    ui.print_status_line("最大线程数", str(config.max_download_routine))
+    ui.print_status_line("批量大小", str(config.file_batch_size))
+    ui.print_status_line("固定列表", f"{len(config.quick_list_ids)} 个")
 
     auth_status = "已设置" if config.auth_token else "未设置"
     ct0_status = "已设置" if config.ct0 else "未设置"
-    print("\n认证状态:")
-    print(f"  auth_token: {auth_status}")
-    print(f"  ct0: {ct0_status}")
+    print()
+    ui.print_status_line("auth_token", auth_status)
+    ui.print_status_line("ct0", ct0_status)
 
     ui.pause()
     return 0

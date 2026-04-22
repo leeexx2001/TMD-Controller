@@ -156,25 +156,28 @@ class MainMenu(BaseMenu):
 
         self._print_status()
 
-        print("  [1] 快捷输入  → 智能识别URL/用户名/列表ID开始下载")
-        print("  [2] 高级选项  → 精确控制、批量、文件、组合、时间戳管理\n")
-        print("  [R] 恢复下载  → 续传未完成任务")
-        print("  [Q] 快速下载  → 顺序下载所有配置的固定列表\n")
-        print("  [C] 配置向导  [L] 查看日志  [H] 帮助  [0] 退出\n")
+        self.ui.print_menu_option("1", "快捷输入", "智能识别URL/用户名/列表ID开始下载")
+        self.ui.print_menu_option("2", "高级选项", "精确控制、批量、文件、组合、时间戳管理")
+        print()
+        self.ui.print_menu_option("R", "恢复下载", "续传未完成任务")
+        self.ui.print_menu_option("Q", "快速下载", "顺序下载所有配置的固定列表")
+        print()
+        print("  [C] 配置向导  [L] 查看日志  [H] 帮助  [0] 退出")
+        print()
         self.ui.print_separator()
 
     def _print_status(self) -> None:
         """打印状态栏"""
         exe_display = str(self.executable_path) if self.executable_path else "[未找到]"
-        print(f"  可执行文件: {exe_display}")
-        print(f"  配置文件:   {self.config.config_file}")
+        self.ui.print_status_line("可执行文件", exe_display)
+        self.ui.print_status_line("配置文件", str(self.config.config_file))
 
         # 显示核心配置状态
         if self.config.auth_token and self.config.ct0 and self.config.root_path:
             status = "[已配置] ✅"
         else:
             status = "[未配置 - 请运行 C] ❌"
-        print(f"  状态:       {status}")
+        self.ui.print_status_line("状态", status)
 
         # 显示备用账号状态
         cookies = self.cookie_service.load_additional_cookies()
@@ -183,17 +186,16 @@ class MainMenu(BaseMenu):
             cookie_status = f"🍪 {cookie_count}个备用"
         else:
             cookie_status = "无备用账号"
-        print(f"  备用账号:   [{cookie_status}]")
+        self.ui.print_status_line("备用账号", f"[{cookie_status}]")
 
         # 显示固定列表状态
         if self.config.quick_list_ids:
             count = len(self.config.quick_list_ids)
-            print(f"  固定列表:   共{count}个列表")
+            self.ui.print_status_line("固定列表", f"共{count}个列表")
         else:
-            print("  固定列表:   [未配置]")
+            self.ui.print_status_line("固定列表", "[未配置]")
 
         # 显示文件分批状态
-        print(f"  文件分批:   {self.config.file_batch_size}行/批", end="")
         delays = []
         if self.config.is_batch_delay_success_enabled:
             delays.append(
@@ -204,19 +206,19 @@ class MainMenu(BaseMenu):
                 f"失败延迟:{self.config.batch_delay_fail_min}-{self.config.batch_delay_fail_max}s"
             )
         if delays:
-            print(f" [{', '.join(delays)}]")
+            batch_value = f"{self.config.file_batch_size}行/批 [{', '.join(delays)}]"
         else:
-            print(" [延迟保护:禁用]")
+            batch_value = f"{self.config.file_batch_size}行/批 [延迟保护:禁用]"
+        self.ui.print_status_line("文件分批", batch_value)
 
         # 显示代理状态
         if self.config.use_proxy:
             proxy_status = self.proxy_service.get_status()
-            if proxy_status.is_reachable:
-                print(f"  代理设置:   {proxy_status.address} [🟢 开启]\n")
-            else:
-                print(f"  代理设置:   {proxy_status.address} [🔴 开启]\n")
+            proxy_value = f"{proxy_status.address} [{'🟢' if proxy_status.is_reachable else '🔴'} 开启]"
         else:
-            print("  代理设置:   [⚪ 关闭]\n")
+            proxy_value = "[⚪ 关闭]"
+        self.ui.print_status_line("代理设置", proxy_value)
+        print()
 
     def _menu_quick_download(self) -> None:
         """快捷输入模式"""

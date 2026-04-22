@@ -85,11 +85,11 @@ class QuickListMenu(BaseMenu):
             self.ui.print_separator()
 
             # 操作选项
-            print("  [1] 添加列表    → 添加新的列表ID")
-            print("  [2] 删除列表    → 移除列表")
-            print("  [3] 排序列表    → 调整列表下载顺序（上移/下移）")
-            print("  [4] 立即下载    → 选择列表开始下载")
-            print("  [0] 返回上级菜单\n")
+            self.ui.print_menu_option("1", "添加列表", "添加新的列表ID")
+            self.ui.print_menu_option("2", "删除列表", "移除列表")
+            self.ui.print_menu_option("3", "排序列表", "调整列表下载顺序（上移/下移）")
+            self.ui.print_menu_option("4", "立即下载", "选择列表开始下载")
+            self.ui.print_menu_option("0", "返回上级菜单", "")
             print("提示: [Q] 键将按当前顺序下载所有列表")
 
             choice = self.ui.safe_input("\n请选择 [0-4]: ", allow_empty=True)
@@ -208,15 +208,22 @@ class QuickListMenu(BaseMenu):
         idx = int(choice) - 1
         if 0 <= idx < len(self.config.quick_list_ids):
             removed = self.config.quick_list_ids[idx]
+
+            # 确认删除
+            if not self.ui.confirm_action(f"确认删除列表 {removed}?", explicit=True):
+                print("📝 已取消")
+                self.ui.pause()
+                return
+
             new_ids = copy.deepcopy(self.config.quick_list_ids)
             new_ids.pop(idx)
 
             success, error = self.config.save_quick_list_ids(new_ids)
 
             if success:
-                print(f"已删除列表 {removed}")
+                print(f"✅ 已删除列表 {removed}")
             else:
-                print(f"删除失败: {error}")
+                print(f"❌ 删除失败: {error}")
                 print("配置未更改")
         else:
             print("无效的序号")
@@ -297,9 +304,10 @@ class QuickListMenu(BaseMenu):
             for i, list_id in enumerate(self.config.quick_list_ids, 1):
                 print(f"  [{i}] {list_id}")
 
-            self.ui.flush_keyboard_buffer()
-            choice = input(f"\n请选择 [1-{len(self.config.quick_list_ids)}]: ").strip()
-            if not choice.isdigit():
+            choice = self.ui.safe_input(
+                f"\n请选择 [1-{len(self.config.quick_list_ids)}]: ", allow_empty=True
+            )
+            if not choice or not choice.isdigit():
                 return
             idx = int(choice) - 1
             if 0 <= idx < len(self.config.quick_list_ids):
@@ -370,10 +378,10 @@ class QuickListMenu(BaseMenu):
     def _display_quick_list_status(self) -> None:
         """显示固定列表状态"""
         if not self.config.quick_list_ids:
-            print("  当前状态: [未配置任何固定列表]")
+            self.ui.print_status_line("当前状态", "[未配置任何固定列表]")
             print("  提示: 添加后可在主菜单按 [Q] 顺序下载所有列表\n")
         else:
-            print(f"  列表数量: 共 {len(self.config.quick_list_ids)} 个")
+            self.ui.print_status_line("列表数量", f"共 {len(self.config.quick_list_ids)} 个")
             print()
             print("  当前固定列表:")
             print("  序号   列表ID                   下载顺序")

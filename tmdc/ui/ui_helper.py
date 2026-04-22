@@ -31,6 +31,7 @@ except ImportError:
 
 # 本地模块
 from tmdc.constants import C
+from tmdc.utils.text_utils import display_width
 
 
 class UIHelper:
@@ -280,6 +281,36 @@ class UIHelper:
             msg: 消息内容
         """
         print(f" {msg}")
+
+    def print_menu_option(self, key: str, label: str, desc: str) -> None:
+        """打印菜单选项（统一格式）
+
+        Args:
+            key: 选项键
+            label: 选项标签
+            desc: 选项描述
+        """
+        label_width = display_width(label)
+        padding = 12 - label_width + len(label)  # 调整填充以补偿中文字符
+
+        if desc:
+            print(f"  [{key}] {label:<{padding}} → {desc}")
+        else:
+            print(f"  [{key}] {label}")
+
+    def print_status_line(self, label: str, value: str, status: str = "") -> None:
+        """打印状态行（统一格式）
+
+        Args:
+            label: 标签名
+            value: 值
+            status: 状态文本
+        """
+        label_width = display_width(label)
+        padding = 10 - label_width + len(label)  # 调整填充以补偿中文字符
+
+        status_str = f" [{status}]" if status else ""
+        print(f"  {label:<{padding}} {value}{status_str}")
 
     def print_separator(self) -> None:
         """

@@ -80,32 +80,31 @@ class PathMenu(BaseMenu):
 
             if stats:
                 user_count, user_dir_count, list_count, list_dir_count = stats
-                print(f"  用户实体:   {user_count} 个，涉及 {user_dir_count} 个不同路径")
-                print(f"  列表实体:   {list_count} 个，涉及 {list_dir_count} 个不同路径")
+                self.ui.print_status_line("用户实体", f"{user_count} 个，涉及 {user_dir_count} 个不同路径")
+                self.ui.print_status_line("列表实体", f"{list_count} 个，涉及 {list_dir_count} 个不同路径")
             else:
-                print("  用户实体:   [无法读取] ❌")
-                print("  列表实体:   [无法读取] ❌")
+                self.ui.print_status_line("用户实体", "[无法读取]", "❌")
+                self.ui.print_status_line("列表实体", "[无法读取]", "❌")
 
             # 显示当前配置的路径
             if self.config.root_path:
                 expanded = str(Path(self.config.root_path).expanduser())
-                exists = "✅" if Path(expanded).exists() else "⚠️  (不存在)"
-                print(f"  当前配置:   {expanded} {exists}")
+                exists = "✅" if Path(expanded).exists() else "⚠️ (不存在)"
+                self.ui.print_status_line("当前配置", expanded, exists)
             else:
-                print("  当前配置:   [未配置] ❌")
+                self.ui.print_status_line("当前配置", "[未配置]", "❌")
             print()
 
             self.ui.print_separator()
 
             # 操作选项
-            print("  [1] 全局替换路径    → 批量替换所有路径前缀（移动文件夹后使用）")
-            print("  [2] 修改特定用户    → 搜索并修改单个用户的路径")
-            print("  [3] 修改特定列表    → 搜索并修改单个列表的路径")
-            print("  [0] 返回配置向导\n")
+            self.ui.print_menu_option("1", "全局替换路径", "批量替换所有路径前缀（移动文件夹后使用）")
+            self.ui.print_menu_option("2", "修改特定用户", "搜索并修改单个用户的路径")
+            self.ui.print_menu_option("3", "修改特定列表", "搜索并修改单个列表的路径")
+            self.ui.print_menu_option("0", "返回配置向导", "")
             print("💡 提示: 修改前建议先备份 foo.db 文件，避免误操作")
 
-            self.ui.flush_keyboard_buffer()
-            choice = input("请选择 [0-3]: ").strip().upper()
+            choice = self._get_menu_choice()
 
             if choice == "0":
                 break
@@ -245,8 +244,7 @@ class PathMenu(BaseMenu):
         self.ui.print_separator()
 
         # 确认操作
-        confirm = input(f"确认替换 {total_matches} 条记录? [Y/N]: ").strip().upper()
-        if confirm != "Y":
+        if not self.ui.confirm_action(f"确认替换 {total_matches} 条记录? [y/N]", explicit=True):
             print("📝 已取消")
             self.ui.pause()
             return
@@ -266,8 +264,8 @@ class PathMenu(BaseMenu):
         try:
             self.database_service.execute_transaction(operations)
             print("\n✅ 路径替换完成:")
-            print(f"  用户实体: {len(user_matches)} 条记录已更新")
-            print(f"  列表实体: {len(list_matches)} 条记录已更新")
+            self.ui.print_status_line("用户实体", f"{len(user_matches)} 条记录已更新")
+            self.ui.print_status_line("列表实体", f"{len(list_matches)} 条记录已更新")
             self.logger.info(
                 f"路径迁移: '{old_path}' -> '{new_path}' (用户:{len(user_matches)}, 列表:{len(list_matches)})"
             )
@@ -391,8 +389,7 @@ class PathMenu(BaseMenu):
         self.ui.print_separator()
 
         # 确认
-        confirm = input("确认修改? [Y/N]: ").strip().upper()
-        if confirm != "Y":
+        if not self.ui.confirm_action("确认修改? [y/N]", explicit=True):
             print("📝 已取消")
             self.ui.pause()
             return
@@ -404,8 +401,8 @@ class PathMenu(BaseMenu):
         try:
             self.database_service.execute_transaction(operations)
             print("\n✅ 路径已更新:")
-            print(f"  {label}: {display_name}")
-            print(f"  新路径: {new_path}")
+            self.ui.print_status_line(label, display_name)
+            self.ui.print_status_line("新路径", new_path)
             self.logger.info(f"{label}路径修改: {display_name} -> {new_path}")
         except sqlite3.Error as e:
             print(f"\n❌ 路径修改失败: {e}")

@@ -71,37 +71,30 @@ class ResumeMenu(BaseMenu):
 
     def show(self) -> None:
         """显示恢复菜单"""
-        self.ui.clear_screen()
-        self.ui.show_header("恢复未完成下载")
-
         if not self._check_config_or_return():
             return
 
-        print("继续下载之前失败或未完成的任务。")
-        print("[1] 自动恢复下载    → 循环后自动补救下载")
-        print("[2] 恢复下载        → 单次恢复，不循环")
-        print("[3] 补救下载        → 绕开TMD，直接下载")
-        print("[4] 失败任务统计    → 显示失败任务详情")
-        print("[0] 返回主菜单\n")
+        options = [
+            ("1", "自动恢复下载", "循环后自动补救下载"),
+            ("2", "恢复下载", "单次恢复，不循环"),
+            ("3", "补救下载", "绕开TMD，直接下载"),
+            ("4", "失败任务统计", "显示失败任务详情"),
+            ("0", "返回主菜单", ""),
+        ]
 
-        choice = self.ui.safe_input("请选择 [1-4,0]: ", allow_empty=True)
-        if choice is None:
-            return
-        choice = choice.upper()
+        handlers = {
+            "1": self._run_auto_loop,
+            "2": self._run_interactive_loop,
+            "3": self._force_remedy,
+            "4": self._check_stats,
+        }
 
-        if choice == "":
-            choice = "1"
-
-        if choice == "0":
-            return
-        elif choice == "1":
-            self._run_auto_loop()
-        elif choice == "2":
-            self._run_interactive_loop()
-        elif choice == "3":
-            self._force_remedy()
-        elif choice == "4":
-            self._check_stats()
+        self._run_menu_loop(
+            title="恢复未完成下载",
+            options=options,
+            handlers=handlers,
+            hints=["继续下载之前失败或未完成的任务"],
+        )
 
     def _run_interactive_loop(self) -> None:
         """单次恢复下载，不循环"""
