@@ -1,3 +1,6 @@
+#本项目不会继续更新，请使用 [TMD](https://github.com/tweetduck/TwitterMediaDownloader)
+
+
 # TMD Controller
 
 [![Version](https://img.shields.io/badge/version-7.0.0-blue.svg)](https://github.com/tmd-project)
