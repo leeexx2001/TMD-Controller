@@ -1,4 +1,4 @@
-#本项目不会继续更新，请使用 [TMD](https://github.com/tweetduck/TwitterMediaDownloader)
+# 本项目不会继续更新，请使用 [TMD](https://github.com/leeexx2001/tmd)
 
 
 # TMD Controller
@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 
-Twitter Media Downloader 控制程序（TMD Controller / **tmdc**），提供交互式终端菜单（TUI）和完整的命令行接口（CLI），大幅简化 [TMD](https://github.com/tweetduck/TwitterMediaDownloader) 的使用流程。采用模块化架构设计，支持依赖注入、协议接口分层、双轨风控延迟、多账号轮询、增量时间戳同步等高级特性。
+Twitter Media Downloader 控制程序（TMD Controller / **tmdc**），提供交互式终端菜单（TUI）和完整的命令行接口（CLI），大幅简化 [TMD](https://github.com/leeexx2001/tmd) 的使用流程。采用模块化架构设计，支持依赖注入、协议接口分层、双轨风控延迟、多账号轮询、增量时间戳同步等高级特性。
 
 ---
 
